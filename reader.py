@@ -196,6 +196,7 @@ def train_reader(file, question_type, *, limit_questions=300000, upward_level=0)
                                        label, question_id[question_key]))
                 count_questions += 1
             dataset.append(batch_question)
+            
 
     print("Original questions", count_original)
     print("Total questions", count_questions)
@@ -205,6 +206,7 @@ def train_reader(file, question_type, *, limit_questions=300000, upward_level=0)
 
 
 def general_reader(file, question_type, size=None):
+
     with open(file) as json_file:
         data = json.load(json_file)
     size = 10 ** 6 if not size else size
@@ -402,3 +404,10 @@ def DomiKnowS_reader(file, question_type, size=300000, *,
                                "labels": "@@".join(batch_data['labels'])})
     print("Total question:", count_question)
     return return_dataset
+
+if __name__ == "__main__":
+    dataset = DomiKnowS_reader("DataSet/" + "train_FR_v3.json", "FR", size=1, upward_level=12, type_dataset=None, reasoning_steps=0, augmented=True,
+                               STEPGAME_status=None, batch_size=8, rule_text=False)
+    print(dataset)b
+    
+    
