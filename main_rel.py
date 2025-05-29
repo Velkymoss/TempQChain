@@ -9,16 +9,16 @@ import argparse
 import numpy as np
 import transformers
 from domiknows.graph import Graph, Concept, Relation
-from program_declaration import program_declaration_spartun_fr, program_declaration_StepGame, program_declaration_spartun_fr_T5, program_declaration_StepGame_T5, program_declaration_spartun_fr_T5_v2, program_declaration_spartun_fr_T5_v3
-from program_declaration_SPARTUN_FR import program_declaration_spartun_fr_T5_v4, program_declaration_spartun_fr_T5_v5
-from dataset_readers.readers import DomiKnowS_reader
+from domino_programs.program_declaration import program_declaration_spartun_fr, program_declaration_StepGame, program_declaration_spartun_fr_T5, program_declaration_StepGame_T5, program_declaration_spartun_fr_T5_v2, program_declaration_spartun_fr_T5_v3
+from domino_programs.program_declaration_SPARTUN_FR import program_declaration_spartun_fr_T5_v4, program_declaration_spartun_fr_T5_v5
+from domino_readers.readers import DomiKnowS_reader
 import tqdm
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix
 
 
 def eval(program, testing_set, cur_device, args, print_result=False, StepGame_number=None, multilabel=False):
     if args.test_file.upper() != "STEPGAME":
-        from graph_spartun_rel import left, right, above, below, behind, front, near, far, disconnected, touch, \
+        from domino_graphs.graph_spartun_rel import left, right, above, below, behind, front, near, far, disconnected, touch, \
             overlap, coveredby, inside, cover, contain, output_for_loss
         all_labels = [left, right, above, below, behind, front, near, far, disconnected,
                       touch, overlap, coveredby, inside, cover, contain]
@@ -27,7 +27,7 @@ def eval(program, testing_set, cur_device, args, print_result=False, StepGame_nu
                   "near", "far", "disconnect", "touch", "overlap", "covered by",
                   "inside", "cover", "contain"]
     else:
-        from graph_stepgame import left, right, above, below, lower_left, lower_right, upper_left, upper_right, overlap
+        from domino_graphs.graph_stepgame import left, right, above, below, lower_left, lower_right, upper_left, upper_right, overlap
         all_labels = [left, right, above, below, lower_left, lower_right, upper_left, upper_right, overlap]
         all_labels_text = ["left", "right", "above", "below", "lower-left",
                   "lower-right", "upper-left", "upper-right", "overlap"]

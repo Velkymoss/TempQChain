@@ -8,15 +8,15 @@ import torch
 import argparse
 import numpy as np
 from domiknows.graph import Graph, Concept, Relation
-from program_declaration import program_declaration
-from dataset_readers.readers import DomiKnowS_reader
+from domino_programs.program_declaration import program_declaration
+from domino_readers.readers import DomiKnowS_reader
 import tqdm
 from domiknows.program.model.base import Mode
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix, accuracy_score
 
 
 def eval(program, testing_set, cur_device, args):
-    from graph import answer_class
+    from domino_graphs.graph import answer_class
     labels = ["Yes", "No"]
     accuracy_ILP = 0
     accuracy = 0
@@ -72,7 +72,7 @@ def eval(program, testing_set, cur_device, args):
 
 
 def train(program, train_set, eval_set, cur_device, limit, lr, program_name="DomiKnow", args=None):
-    from graph import answer_class
+    from domino_graphs.graph import answer_class
 
     def evaluate():
         labels = ["Yes", "No"]

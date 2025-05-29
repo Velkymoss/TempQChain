@@ -14,7 +14,7 @@ pythonpath = [
 [tool.coverage.run]
 branch = true
 source = [
-    "dataset_readers",
+    "domino_readers",
     "reader_utils",
     "data_models"
 ]
