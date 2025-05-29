@@ -1,5 +1,3 @@
-# test_cuda.py
-
 import torch
 import pytest
 
