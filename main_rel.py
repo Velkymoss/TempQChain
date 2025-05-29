@@ -11,7 +11,7 @@ import transformers
 from domiknows.graph import Graph, Concept, Relation
 from program_declaration import program_declaration_spartun_fr, program_declaration_StepGame, program_declaration_spartun_fr_T5, program_declaration_StepGame_T5, program_declaration_spartun_fr_T5_v2, program_declaration_spartun_fr_T5_v3
 from program_declaration_SPARTUN_FR import program_declaration_spartun_fr_T5_v4, program_declaration_spartun_fr_T5_v5
-from reader import DomiKnowS_reader
+from dataset_readers.readers import DomiKnowS_reader
 import tqdm
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix
 

@@ -1,8 +1,8 @@
 import json
 import tqdm
 import logging
-from reader_utils import create_key, create_simple_question, label_fr_to_int
-from data_models import SPARTUNStory
+from dataset_readers.utils import create_key, create_simple_question, label_fr_to_int
+from dataset_readers.data_models import SPARTUNStory
 
 logger = logging.getLogger("__reader__")
 logging.basicConfig(level=logging.INFO)
@@ -131,7 +131,6 @@ def train_reader(filepath: str, question_type: str, *, limit_questions: int = 30
                 all_batch_dynamic_info[len(added_questions)] = 0
             all_batch_dynamic_info[len(added_questions)] += 1
 
-            # dataset.append(added_questions[::-1])
             batch_question = []
             for added_question, label, question_key in added_questions[::-1]:
                 batch_question.append((added_question, story.story_text, question.q_type,
@@ -158,7 +157,6 @@ def general_reader(file, question_type, size=None):
     count = 0
     for story in data["data"]:
         story_txt = " ".join(story['story'])
-        question_id = {}
         run_id = 0
 
         for question in story["questions"]:
@@ -304,7 +302,7 @@ def DomiKnowS_reader(file, question_type, size=300000, *,
             str(STEPGAME_status) if STEPGAME_status is not None else "")):
         count_question += len(batch)
         # Checking each batch have same story, prevent mixing IDs
-        check_same_story = current_batch_size != 0 and batch[0][1] == batch_data["stories"][0]
+        # check_same_story = current_batch_size != 0 and batch[0][1] == batch_data["stories"][0]
         if (current_batch_size + len(batch) > batch_size) and current_batch_size != 0:
             current_batch_size = 0
             return_dataset.append({"questions": "@@".join(batch_data['questions']),

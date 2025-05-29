@@ -1,19 +1,24 @@
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-addopts = "-ra -q --cov=. --cov-report=term-missing"
-pythonpath = "."
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests"
+]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+pythonpath = [
+    "."
+]
 
 [tool.coverage.run]
-source = ["."]
-omit = ["tests/*", "setup.py"]
+branch = true
+source = [
+    "dataset_readers",
+    "reader_utils",
+    "data_models"
+]
 
 [tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "if __name__ == .__main__.:",
-    "raise NotImplementedError",
-    "pass",
-    "raise ImportError",
-] 
+show_missing = true
+skip_covered = true

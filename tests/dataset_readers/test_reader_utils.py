@@ -1,5 +1,5 @@
 import pytest
-from reader_utils import create_key, create_simple_question, label_fr_to_int
+from dataset_readers.utils import create_key, create_simple_question, label_fr_to_int
 
 def test_yn_question_type():
     """Test create_key with Yes/No question type"""

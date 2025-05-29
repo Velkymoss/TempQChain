@@ -9,7 +9,7 @@ import argparse
 import numpy as np
 from domiknows.graph import Graph, Concept, Relation
 from program_declaration import program_declaration
-from reader import DomiKnowS_reader
+from dataset_readers.readers import DomiKnowS_reader
 import tqdm
 from domiknows.program.model.base import Mode
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix, accuracy_score
