@@ -22,3 +22,33 @@ source = [
 [tool.coverage.report]
 show_missing = true
 skip_covered = true
+[project]
+name = "spartunqchain"
+version = "0.1.0"
+description = "fork of original repo, same package version"
+authors = [
+    {name = "Max Moser",email = "maxmoser.15@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "domiknows (==0.533)",
+    "peft (==0.10.0)",
+    "pandas (==2.2.1)",
+    "numpy (==1.26.4)",
+    "sentencepiece (==0.2.0)",
+    "torch (==2.2.1)",
+    "tqdm (==4.66.2)",
+    "transformers (==4.39.2)",
+    "spacy (==3.7.4)",
+    "accelerate (==0.29.1)",
+    "python-dotenv (>=1.1.0,<2.0.0)",
+    "pytest (==8.3.5)"
+]
+
+[tool.poetry.dependencies]
+python = ">=3.12,<4.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

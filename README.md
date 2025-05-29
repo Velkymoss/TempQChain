@@ -4,10 +4,10 @@ This is the code associated with paper https://arxiv.org/abs/2406.13828
 
 ## Requirement
 
-Please install the package version in README.md
+
 
 ```python 
-pip install -r requirments.txt
+poetry install
 ```
 
 # Experiment
