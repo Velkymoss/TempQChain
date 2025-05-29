@@ -1,8 +1,12 @@
 # SPARTUNQChain
 
-This is the code associated with paper https://arxiv.org/abs/2406.13828
 
-## Requirement
+
+Fork from https://github.com/HLR/SpaRTUNQChain
+
+Refactored code from paper https://arxiv.org/abs/2406.13828 puplished by Premsri and Kordjamshidi
+
+## Dependencies
 
 
 
