@@ -16,7 +16,6 @@ make install
 
 # Experiment
 
-The possible model option is ["roberta", "t5-adapter", "bert"].
 
 The program will save the parameters of the model in Models folder for any further use.
 
