@@ -10,8 +10,8 @@ Refactored code from paper https://arxiv.org/abs/2406.13828 puplished by Premsri
 
 
 
-```python 
-poetry install
+```bash
+make install
 ```
 
 # Experiment
@@ -27,28 +27,28 @@ Note that the augmented Q-Chain part in train_YN_v3.json and train_FR_v3.json on
 ## Yes-No Question
 
 ### Baseline
-```commandline
-python main.py --epoch 8 --train_file ORIGIN --test_file ORIGIN --train_size 1000000 --test_size 1000000 --cuda 0 --lr 8e-6 --batch_size 8
+```bash
+make baseline-yn
 ```
 ### Primal-Dual
-```commandline
-python main.py --epoch 8 --train_file ORIGIN --test_file ORIGIN --train_size 1000000 --test_size 1000000 --cuda 0 --lr 8e-6 --batch_size 8 --pmd T --constraints T
+```bash
+make primal-dual-yn
 ```
 ### Primal-Dual + Q-Chain
-```commandline
-python main.py --epoch 8 --train_file SPARTUN --test_file SPARTUN --train_size 1000000 --test_size 1000000 --cuda 0 --lr 8e-6 --batch_size 8 --model t5-adapter --pmd T --constraints T --save T --save_file Q_chain_T5
+```bash
+make primal-dual-qchain-yn
 ```
 
 ## Experiment with FR
 The possible model option is [ "bert"].
-```commandline
-python main_rel.py --epoch 8 --train_file ORIGIN --test_file ORIGIN --train_size 1000000 --test_size 1000000 --cuda 0 --lr 8e-6 --batch_size 8
+```bash
+make baseline-fr
 ```
 ### Primal-Dual
-```commandline
-python main_rel.py --epoch 8 --train_file ORIGIN --test_file ORIGIN --train_size 1000000 --test_size 1000000 --cuda 0 --lr 8e-6 --batch_size 8 --pmd T --constraints T
+```bash
+make primal-dual-fr
 ```
 ### Primal-Dual + Q-Chain
-```commandline
-python main_rel.py --epoch 8 --train_file SPARTUN --test_file SPARTUN --train_size 1000000 --test_size 1000000 --cuda 0 --lr 8e-6 --batch_size 8 --pmd T --constraints T --save T --save_file Q_chain_T5
+```bash
+make primal-dual-qchain-fr
 ```
