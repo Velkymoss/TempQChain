@@ -73,3 +73,9 @@ make primal-dual-fr
 ```bash
 make primal-dual-qchain-fr
 ```
+
+## Tests
+
+```bash
+make tests
+```
