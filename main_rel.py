@@ -15,6 +15,10 @@ from domino_readers.readers import DomiKnowS_reader
 import tqdm
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix
 
+from logger import get_logger
+
+logger = get_logger(__name__)
+
 
 def eval(program, testing_set, cur_device, args, print_result=False, StepGame_number=None, multilabel=False):
     if args.test_file.upper() != "STEPGAME":

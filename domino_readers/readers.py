@@ -1,11 +1,10 @@
 import json
 import tqdm
-import logging
-from domino_readers.utils import create_key, create_simple_question, label_fr_to_int
-from domino_readers.data_models import SPARTUNStory
+from domino_readers.utils import label_fr_to_int
+from domino_readers.reader_classes import TrainReader
+from logger import get_logger
 
-logger = logging.getLogger("__reader__")
-logging.basicConfig(level=logging.INFO)
+logger = get_logger(__name__)
 
 def train_reader(filepath: str, question_type: str, *, limit_questions: int = 300000, upward_level: int = 0)-> list[dict]:
     """
@@ -18,134 +17,17 @@ def train_reader(filepath: str, question_type: str, *, limit_questions: int = 30
     Returns:
         list[dict]: dataset where each dict contains questions, stories, relations, question IDs and labels.
     """
-    
-    # open file
     with open(filepath) as json_file:
         file = json.load(json_file)
-    data = file['data']
 
     logger.info(f"level: {upward_level}")
+    logger.info("USING THIS")
 
-    dataset = []
+    data = file['data']
 
-    # counters
-    count_questions = 0
-    count_original = 0
-    all_batch_dynamic_info = {}
+    reader = TrainReader(data, question_type, limit_questions, upward_level)
+    return reader.process_data()
 
-    for story in data:
-        story = SPARTUNStory(**story)
-        relation_info = {}
-        question_id = {}
-        run_id_within_q = 0
-
-        for question in story.questions:
-
-            if count_questions >= limit_questions:
-                break
-
-            if question.q_type != question_type:
-                continue
-
-            count_original += 1
-
-            # Extracting objects from question
-            obj1, obj2 = question.query
-
-            target_question = (obj1, obj2, question.target_relation)
-            asked_question = (obj1, obj2, question.asked_relation)
-            current_key = create_key(*asked_question, question_type)
-
-            added_questions = []  # questions to be added to the model
-            reasoning_steps_from_target = upward_level
-
-            # Create question id of current answer
-            if current_key not in question_id:
-                question_id[current_key] = run_id_within_q
-                run_id_within_q += 1
-
-            if question_type == "YN":
-                label = question.answer[0]
-            else:
-                label = label_fr_to_int(question.answer)
-
-            added_questions.append((question.question, label, current_key))
-
-            if question_type == "YN":
-                # If the answer of question is no, adding another question asking the same thing but "Yes" input
-                if question.answer[0].lower() == "no":
-                    target_key = create_key(*target_question, question_type)
-                    added_questions.append((create_simple_question(*target_question, story.objects_info, question_type),
-                                            "Yes",
-                                            target_key))
-
-                    if target_key not in question_id:
-                        question_id[target_key] = run_id_within_q
-                        run_id_within_q += 1
-                    relation_info[current_key] = "reverse," + str(question_id[target_key])
-
-                    reasoning_steps_from_target -= 1
-
-            current_level = [target_question]
-            for _ in range(reasoning_steps_from_target):
-                new_level = []
-                for current_fact in current_level:
-                    
-                    current_key = create_key(*current_fact, question_type)
-                    fact_info_key = create_key(*current_fact, "")
-                    previous_ids = []
-                    if current_key not in question_id:
-                        question_id[current_key] = run_id_within_q
-                        run_id_within_q += 1
-                    previous_facts = story.facts_info[fact_info_key][current_fact[2]]["previous"]
-
-                    for previous in previous_facts:
-                        previous_key = create_key(*previous, question_type)
-                        fact_info_prev_key = create_key(*previous, "")
-                        if previous_key not in question_id:
-                            question_id[previous_key] = run_id_within_q
-                            run_id_within_q += 1
-                        previous_ids.append(str(question_id[previous_key]))
-                        new_level.append(previous)
-                        if question_type == "YN":
-                            added_questions.append((create_simple_question(*previous, story.objects_info, question_type),
-                                                    "Yes",
-                                                    previous_key))
-                        else:
-                            added_questions.append((create_simple_question(*previous, story.objects_info, question_type),
-                                                    label_fr_to_int(list(story.facts_info[fact_info_prev_key].keys())),
-                                                    previous_key))
-                        current_level = new_level
-
-                    size_relation = len(previous_ids)
-                    if size_relation == 0:
-                        relation_info[current_key] = ""
-                        continue
-                    relation_type = "symmetric" if size_relation == 1 \
-                        else "transitive" if size_relation == 2 \
-                        else "transitive_topo"
-                    relation_type = relation_type + ',' + ','.join(previous_ids)
-                    relation_info[current_key] = relation_type
-
-            if len(added_questions) not in all_batch_dynamic_info:
-                all_batch_dynamic_info[len(added_questions)] = 0
-            all_batch_dynamic_info[len(added_questions)] += 1
-
-            batch_question = []
-            for added_question, label, question_key in added_questions[::-1]:
-                batch_question.append((added_question, story.story_text, question.q_type,
-                                       question.candidate_answers,
-                                       relation_info[question_key] if question_key in relation_info else "",
-                                       label, question_id[question_key]))
-                count_questions += 1
-            dataset.append(batch_question)
-            
-
-    logger.info(f"Original questions {count_original}")
-    logger.info(f"Total questions {count_questions}")
-    logger.info(all_batch_dynamic_info)
-    
-    return dataset
 
 def general_reader(file, question_type, size=None):
 

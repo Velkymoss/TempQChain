@@ -14,6 +14,10 @@ import tqdm
 from domiknows.program.model.base import Mode
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix, accuracy_score
 
+from logger import get_logger
+
+logger = get_logger(__name__)
+
 
 def eval(program, testing_set, cur_device, args):
     from domino_graphs.graph import answer_class
