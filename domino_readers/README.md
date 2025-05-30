@@ -3,3 +3,4 @@
 - implement tests for other readers from readers.py
 - finish data models by adding correct types which are currently any
 - add docstrings to TrainReader class and datamodels
+- switch all prints to proper logging statements
