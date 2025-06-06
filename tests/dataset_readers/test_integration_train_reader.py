@@ -22,7 +22,9 @@ def generated_dataset():
     )
     return dataset
 
-def test_datasets_are_equal(comparison_dataset, generated_dataset):
+def test_datasets_are_equal_length(comparison_dataset, generated_dataset):
     assert len(comparison_dataset) == len(generated_dataset), "Datasets have different lengths"
+    
+def test_datasets_are_equal_content(comparison_dataset, generated_dataset):  
     for idx, (expected, actual) in enumerate(zip(comparison_dataset, generated_dataset)):
         assert expected == actual, f"Mismatch at index {idx}: {expected} != {actual}"

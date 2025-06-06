@@ -95,7 +95,7 @@ class TrainReader:
 
                 reasoning_steps_from_target -= 1
 
-            self._process_reasoning_steps(target_question, reasoning_steps_from_target, story, added_questions)
+        self._process_reasoning_steps(target_question, reasoning_steps_from_target, story, added_questions)
 
         return added_questions
     
@@ -117,7 +117,7 @@ class TrainReader:
             for current_fact in current_level:
                 
                 current_key = self._create_key(*current_fact)
-                fact_info_key = self._create_key(*current_fact)
+                fact_info_key = self._create_key(current_fact[0], current_fact[1], "")
                 previous_ids = []
 
                 if current_key not in self.question_id:
@@ -129,7 +129,7 @@ class TrainReader:
                 for previous in previous_facts:
 
                     previous_key = self._create_key(*previous)
-                    fact_info_prev_key = self._create_key(*previous)
+                    fact_info_prev_key = self._create_key(previous[0], previous[1], "")
 
                     if previous_key not in self.question_id:
                         self.question_id[previous_key] = self.run_id_within_q
@@ -148,7 +148,7 @@ class TrainReader:
                                                 previous_key))
                     current_level = new_level
                 
-                relation_type = self._get_relation_type(self, previous_ids)
+                relation_type = self._get_relation_type(previous_ids)
                 self.relation_info[current_key] = relation_type
         
     def _get_relation_type(self, previous_ids: list) -> str:
