@@ -171,7 +171,6 @@ def DomiKnowS_reader(file, question_type, size=300000, *,
         dataset = train_reader(file, question_type, limit_questions=size, upward_level=upward_level)
     else:
         dataset = general_reader(file, question_type, size)
-    print(dataset[:2])
 
     additional_text = ""
     if rule_text:
