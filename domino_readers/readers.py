@@ -211,8 +211,8 @@ def DomiKnowS_reader(file, question_type, size=300000, *,
     return return_dataset
 
 if __name__ == "__main__":
-    dataset = DomiKnowS_reader("DataSet/" + "train_FR_v3.json", "FR", size=100, upward_level=12, type_dataset=None, reasoning_steps=0, augmented=True,
+    dataset = DomiKnowS_reader("DataSet/" + "train_FR_v3.json", "FR", size=10, upward_level=3, type_dataset=None, reasoning_steps=0, augmented=True,
                                STEPGAME_status=None, batch_size=8, rule_text=False)
-    print(dataset[0].keys())
+    print(dataset)
 
 

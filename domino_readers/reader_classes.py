@@ -22,7 +22,6 @@ class TrainReader:
         self.run_id_within_q = 0
 
     def process_data(self) -> list[dict]:
-
         for story in self.data:
             story = SPARTUNStory(**story)
             self._process_story(story)
@@ -40,7 +39,6 @@ class TrainReader:
         self.run_id_within_q = 0
 
         for question in story.questions:
-
             if self.count_questions >= self.limit_questions:
                 break
 
