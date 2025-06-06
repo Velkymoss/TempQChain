@@ -1,6 +1,8 @@
 import json
 import pytest
+import random
 from domino_readers.readers import DomiKnowS_reader
+
 
 @pytest.fixture
 def comparison_dataset():
@@ -9,6 +11,8 @@ def comparison_dataset():
 
 @pytest.fixture
 def generated_dataset():
+    # seed needs to be set for reproducibility!
+    random.seed(42)
     dataset = DomiKnowS_reader(
         "DataSet/train_FR_v3.json",
         "FR",
