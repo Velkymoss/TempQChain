@@ -3,6 +3,8 @@ from domino_readers.data_models import SPARTUNStory, SPARTUNQuestion
 from domino_readers.utils import label_fr_to_int, VOCABULARY
 from logger import get_logger
 
+random.seed(42)
+
 logger = get_logger(__name__)
 
 class TrainReader:

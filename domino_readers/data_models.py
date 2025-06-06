@@ -5,7 +5,7 @@ class SPARTUNQuestion(BaseModel):
     question: str
     q_type: str
     candidate_answers: list[str]
-    # question_info: dict[str, Any]
+    question_info: dict[str, Any]
     answer: list[str]
     query: list[str] # query is a list of object strings
 
@@ -36,7 +36,7 @@ class SPARTUNStory(BaseModel):
     # identifier: Optional[str] = None
     # directory: Optional[str] = None
     # seed_id: Optional[int] = None
-    story_triplets: Optional[dict[str, list[dict[str, str]]]] = None
+    # story_triplets: Optional[dict[str, list[dict[str, str]]]] = None
     @property
     def story_text(self) -> str:
         """Return the story as string."""
