@@ -23,6 +23,7 @@ class TrainReader:
         self.question_id = {}
         self.run_id_within_q = 0
 
+
     def process_data(self) -> list[dict]:
         for story in self.data:
             story = SPARTUNStory(**story)
@@ -123,8 +124,11 @@ class TrainReader:
                 if current_key not in self.question_id:
                     self.question_id[current_key] = self.run_id_within_q
                     self.run_id_within_q += 1
-
-                previous_facts = story.facts_info[fact_info_key][current_fact[2]]["previous"]
+                try:
+                    previous_facts = story.facts_info[fact_info_key][current_fact[2]]["previous"]
+                except KeyError:
+                    # logger.warning(f"KeyError for fact_info_key: {fact_info_key} in story: {story.story_text}")
+                    continue
 
                 for previous in previous_facts:
 
@@ -188,6 +192,10 @@ class TrainReader:
             str: A key string in the format "{obj1}:{obj2}[:{relation}]" where the relation
                  is only included for Yes/No questions.
         """
+        # if self.question_type == "YN" and relation:
+        #     return f"{obj1}:{obj2}:{relation}"
+        # if self.question_type == "YN" and not relation:
+        #     return f"{obj1}:{obj2}"
         if self.question_type == "YN":
             return f"{obj1}:{obj2}:{relation}"
         return f"{obj1}:{obj2}"
