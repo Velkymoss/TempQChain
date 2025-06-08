@@ -32,7 +32,7 @@ def train_reader(
     logger.info(f"level: {upward_level}")
     logger.info("USING THIS")
 
-    data = file  # ['data']
+    data = file["data"]
 
     reader = TrainReader(data, question_type, limit_questions, upward_level)
     return reader.process_data()
@@ -63,9 +63,7 @@ def general_reader(file, question_type, size=None):
                 label = question["answer"][0]
                 if label == "DK":
                     label = "No"
-                dataset.append(
-                    [[question_txt, story_txt, q_type, candidates, "", label, run_id]]
-                )
+                dataset.append([[question_txt, story_txt, q_type, candidates, "", label, run_id]])
                 run_id += 1
                 count += 1
             elif q_type == "FR":
@@ -111,9 +109,7 @@ def RESQ_reader(file, question_type, size=None, reasoning=None):
             question_txt = question["question"]
             candidates = question["candidate_answers"]
             label = question["answer"][0] if question["answer"][0] != "DK" else "NO"
-            dataset.append(
-                [[question_txt, story_txt, "YN", candidates, "", label, run_id]]
-            )
+            dataset.append([[question_txt, story_txt, "YN", candidates, "", label, run_id]])
             run_id += 1
             count += 1
 
@@ -175,9 +171,7 @@ def StepGame_reader(prefix, train_dev_test="train", size=None, file_number=None)
                 "overlap",
             ]
             label = story["label"]
-            dataset.append(
-                [[question_txt, story_txt, "FR", candidates, "", label, run_id]]
-            )
+            dataset.append([[question_txt, story_txt, "FR", candidates, "", label, run_id]])
             run_id += 1
 
     return dataset
@@ -198,9 +192,7 @@ def DomiKnowS_reader(
 ):
     logger.info(f"{type_dataset} {reasoning_steps}")
     if type_dataset == "STEPGAME":
-        dataset = StepGame_reader(
-            file, STEPGAME_status, size, file_number=reasoning_steps
-        )
+        dataset = StepGame_reader(file, STEPGAME_status, size, file_number=reasoning_steps)
     elif type_dataset == "BOOLQ":
         dataset = boolQ_reader(file, size)
     elif type_dataset == "RESQ":
@@ -211,9 +203,7 @@ def DomiKnowS_reader(
         dataset = dataset_old + dataset_new
         file = "all_human" + file[0][file[0].rfind("_") :]
     elif augmented:  # Refer to SPARTUN with chain of reasoning when training
-        dataset = train_reader(
-            file, question_type, limit_questions=size, upward_level=upward_level
-        )
+        dataset = train_reader(file, question_type, limit_questions=size, upward_level=upward_level)
     else:
         dataset = general_reader(file, question_type, size)
 
@@ -233,10 +223,7 @@ def DomiKnowS_reader(
     }
     for batch in tqdm.tqdm(
         dataset,
-        desc="Reading "
-        + file
-        + " "
-        + (str(STEPGAME_status) if STEPGAME_status is not None else ""),
+        desc="Reading " + file + " " + (str(STEPGAME_status) if STEPGAME_status is not None else ""),
     ):
         count_question += len(batch)
         # Checking each batch have same story, prevent mixing IDs
@@ -260,9 +247,7 @@ def DomiKnowS_reader(
                 "question_ids": [],
             }
         for data in batch:
-            question_txt, story_txt, q_type, candidates_answer, relation, label, id = (
-                data
-            )
+            question_txt, story_txt, q_type, candidates_answer, relation, label, id = data
             batch_data["questions"].append(question_txt + additional_text)
             batch_data["stories"].append(story_txt)
             batch_data["relation"].append(relation)
