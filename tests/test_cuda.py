@@ -1,12 +1,15 @@
-import torch
 import pytest
+import torch
+
 
 def test_cuda_available():
     assert torch.cuda.is_available(), "CUDA is not available."
 
+
 def test_cuda_device_count():
     count = torch.cuda.device_count()
     assert count > 0, f"No CUDA devices found. Device count: {count}"
+
 
 def test_tensor_cuda():
     try:

@@ -1,5 +1,4 @@
-from domiknows.graph import Graph, Concept, Relation, EnumConcept
-from domiknows.graph.logicalConstrain import orL, andL, existsL, notL, atLeastL, atMostL, ifL, V, nandL, exactL
+from domiknows.graph import Concept, Graph, Relation
 
 CONSTRAIN_ACTIVE = True
 
@@ -7,11 +6,11 @@ Graph.clear()
 Concept.clear()
 Relation.clear()
 
-with Graph('spatial_QA_rule') as graph:
+with Graph("spatial_QA_rule") as graph:
     # Group of sentence
     story = Concept(name="story")
     question = Concept(name="question")
-    story_contain, = story.contains(question)
+    (story_contain,) = story.contains(question)
 
     left = question(name="left")
     right = question(name="right")

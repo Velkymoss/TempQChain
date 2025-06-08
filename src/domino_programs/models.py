@@ -1,9 +1,18 @@
-from torch.nn.modules.module import T
-from transformers import BertModel, BertPreTrainedModel, BertTokenizer, RobertaTokenizer, RobertaModel, \
-    RobertaPreTrainedModel, AutoTokenizer, AutoModelForSeq2SeqLM, AutoModelForCausalLM
-from torch import nn
 import torch
-from peft import LoraConfig, get_peft_model, TaskType, prepare_model_for_kbit_training
+from peft import LoraConfig, TaskType, get_peft_model, prepare_model_for_kbit_training
+from torch import nn
+from torch.nn.modules.module import T
+from transformers import (
+    AutoModelForCausalLM,
+    AutoModelForSeq2SeqLM,
+    AutoTokenizer,
+    BertModel,
+    BertPreTrainedModel,
+    BertTokenizer,
+    RobertaModel,
+    RobertaPreTrainedModel,
+    RobertaTokenizer,
+)
 
 
 class BERTTokenizer:
@@ -169,7 +178,7 @@ class MultipleClassYNT5(nn.Module):
                 target_modules=["q", "v"],
                 lora_dropout=0.05,
                 bias="none",
-                task_type=TaskType.SEQ_2_SEQ_LM
+                task_type=TaskType.SEQ_2_SEQ_LM,
             )
             # prepare int-8 model for training
             self.model = prepare_model_for_kbit_training(self.model)
@@ -185,7 +194,8 @@ class MultipleClassYNT5(nn.Module):
 
     def forward(self, input_ids):
         decoder_id = torch.tensor([[self.tokenizer.pad_token_id] * self.output_size] * input_ids.size(0)).to(
-            self.cur_device)
+            self.cur_device
+        )
         logits = self.model(input_ids, decoder_input_ids=decoder_id)[0]
         tokens = torch.argmax(logits, dim=2)
         # Yes token is 2163, No token is 465
@@ -204,8 +214,12 @@ class T5Tokenizer:
     def __call__(self, _, questions, stories):
         prompts = []
         for ind, question in enumerate(questions):
-            prompts.append("You will answer the question based on the following context: " + stories[
-                ind] + "\n Question: " + question)
+            prompts.append(
+                "You will answer the question based on the following context: "
+                + stories[ind]
+                + "\n Question: "
+                + question
+            )
         encoded_input = self.tokenizer(prompts, padding="max_length", truncation=True)
         input_ids = encoded_input["input_ids"]
         return torch.LongTensor(input_ids)
@@ -226,7 +240,7 @@ class MultipleClassFRT5(nn.Module):
                 target_modules=["q", "v"],
                 lora_dropout=0.05,
                 bias="none",
-                task_type=TaskType.SEQ_2_SEQ_LM
+                task_type=TaskType.SEQ_2_SEQ_LM,
             )
             # prepare int-8 model for training
             self.model = prepare_model_for_kbit_training(self.model)
@@ -249,13 +263,11 @@ class MultipleClassFRT5(nn.Module):
         self.sigmoid = nn.Sigmoid()
         self.softmax = nn.Softmax(dim=1)
         self.map_label = {label: i for i, label in enumerate(expected_label)}
-        self.second_model = nn.Sequential(nn.Linear(len(self.unique_token) * 2, len(expected_label)),
-                                          nn.Sigmoid())
+        self.second_model = nn.Sequential(nn.Linear(len(self.unique_token) * 2, len(expected_label)), nn.Sigmoid())
 
     def forward(self, input_ids):
         # Force decoder to output 2 token
-        decoder_input_ids = torch.tensor([[self.tokenizer.pad_token_id]] * input_ids.size()[0]).to(
-            self.cur_device)
+        decoder_input_ids = torch.tensor([[self.tokenizer.pad_token_id]] * input_ids.size()[0]).to(self.cur_device)
         logits = self.model(input_ids, decoder_input_ids=decoder_input_ids)[0]
         first_word = logits.argmax(dim=2)
 
@@ -301,7 +313,7 @@ class T5WithLora(nn.Module):
                 target_modules=["q", "v"],
                 lora_dropout=0.01,
                 bias="lora_only",
-                task_type=TaskType.SEQ_2_SEQ_LM
+                task_type=TaskType.SEQ_2_SEQ_LM,
             )
             # prepare int-8 model for training
             self.model = prepare_model_for_kbit_training(self.model)
@@ -315,7 +327,7 @@ class T5WithLora(nn.Module):
     def forward(self, _, cat_input_ids):
         input_ids = cat_input_ids[0, :, :]
         attention_mask = cat_input_ids[1, :, :]
-        logits = self.model.generate(**{'input_ids': input_ids, 'attention_mask': attention_mask}, max_new_tokens=20)
+        logits = self.model.generate(**{"input_ids": input_ids, "attention_mask": attention_mask}, max_new_tokens=20)
         return logits
 
     def loss(self, cat_input_ids, cat_encoded_label):
@@ -323,8 +335,12 @@ class T5WithLora(nn.Module):
         attention_mask = cat_input_ids[1, :, :]
         label_input_ids = cat_encoded_label[0, :, :]
         label_attention_mask = cat_encoded_label[1, :, :]
-        loss_t5 = self.model(input_ids, attention_mask=attention_mask, labels=label_input_ids,
-                             decoder_attention_mask=label_attention_mask).loss
+        loss_t5 = self.model(
+            input_ids,
+            attention_mask=attention_mask,
+            labels=label_input_ids,
+            decoder_attention_mask=label_attention_mask,
+        ).loss
         return loss_t5
 
 
@@ -393,7 +409,7 @@ class T5WithLoraGenerativeCLF(nn.Module):
                 target_modules=["q", "v"],
                 lora_dropout=0.01,
                 bias="lora_only",
-                task_type=TaskType.SEQ_2_SEQ_LM
+                task_type=TaskType.SEQ_2_SEQ_LM,
             )
             # prepare int-8 model for training
             self.model = prepare_model_for_kbit_training(self.model)
@@ -423,8 +439,12 @@ class T5WithLoraGenerativeCLF(nn.Module):
         attention_mask = cat_input_ids[1, :, :]
         label_input_ids = cat_encoded_label[0, :, :]
         label_attention_mask = cat_encoded_label[1, :, :]
-        logits = self.model(input_ids, attention_mask=attention_mask,
-                            labels=label_input_ids, decoder_attention_mask=label_attention_mask).logits
+        logits = self.model(
+            input_ids,
+            attention_mask=attention_mask,
+            labels=label_input_ids,
+            decoder_attention_mask=label_attention_mask,
+        ).logits
         return self.transform_logits(logits)
 
     def inference_forward(self, cat_input_ids):
@@ -432,14 +452,18 @@ class T5WithLoraGenerativeCLF(nn.Module):
         attention_mask = cat_input_ids[1, :, :]
 
         seq = self.model.generate(
-            **{'input_ids': input_ids, 'attention_mask': attention_mask, 'min_new_tokens': self.output_length,
-               'max_new_tokens': self.output_length + 1})
-        logits = self.model(input_ids, attention_mask=attention_mask,
-                            decoder_input_ids=seq).logits
+            **{
+                "input_ids": input_ids,
+                "attention_mask": attention_mask,
+                "min_new_tokens": self.output_length,
+                "max_new_tokens": self.output_length + 1,
+            }
+        )
+        logits = self.model(input_ids, attention_mask=attention_mask, decoder_input_ids=seq).logits
         return self.transform_logits(logits)
 
     def transform_logits(self, logit):
-        logit = logit[:, :self.output_length, self.interested_tokens].flatten(1, 2)  # Combine last two dimensions
+        logit = logit[:, : self.output_length, self.interested_tokens].flatten(1, 2)  # Combine last two dimensions
         return logit
 
     def train(self: T, mode: bool = True) -> T:
@@ -464,7 +488,7 @@ class T5WithLoraGenerativeCLF2(nn.Module):
                 target_modules=["q", "v"],
                 lora_dropout=0.01,
                 bias="lora_only",
-                task_type=TaskType.SEQ_2_SEQ_LM
+                task_type=TaskType.SEQ_2_SEQ_LM,
             )
             # prepare int-8 model for training
             self.model = prepare_model_for_kbit_training(self.model)
@@ -484,8 +508,9 @@ class T5WithLoraGenerativeCLF2(nn.Module):
         self._eos_token = tokenizer(" ")["input_ids"][-1]
         self.empty_pred_end = None
         self.empty_pred = None
-        self.label_token_map, self.label_token_map_normalize, self.interested_tokens = self.tokenize_label(label,
-                                                                                                           tokenizer)
+        self.label_token_map, self.label_token_map_normalize, self.interested_tokens = self.tokenize_label(
+            label, tokenizer
+        )
         self.output_length = self.max_group * self.token_each_label + 1  # (+ End of sentence)
 
     def tokenize_label(self, labels, tokenizer):
@@ -500,8 +525,9 @@ class T5WithLoraGenerativeCLF2(nn.Module):
 
             label_token += [self._space_token] * (self.token_each_label - len(label_token))
 
-            label_token[-1] = self._space_token if self.group_label.get(label, 0) != self.max_group - 1 \
-                else self._eos_token
+            label_token[-1] = (
+                self._space_token if self.group_label.get(label, 0) != self.max_group - 1 else self._eos_token
+            )
 
             interested_tokens.extend(label_token)
             label_tokens_map[label] = label_token
@@ -529,8 +555,12 @@ class T5WithLoraGenerativeCLF2(nn.Module):
         label_input_ids = cat_encoded_label[0, :, :]
         label_attention_mask = cat_encoded_label[1, :, :]
         # Need label to generate
-        logits = self.model(input_ids, attention_mask=attention_mask,
-                            labels=label_input_ids, decoder_attention_mask=label_attention_mask).logits
+        logits = self.model(
+            input_ids,
+            attention_mask=attention_mask,
+            labels=label_input_ids,
+            decoder_attention_mask=label_attention_mask,
+        ).logits
         return self.transform_logits(logits)
 
     def _inference_forward(self, cat_input_ids):
@@ -538,11 +568,15 @@ class T5WithLoraGenerativeCLF2(nn.Module):
         attention_mask = cat_input_ids[1, :, :]
 
         seq = self.model.generate(
-            **{'input_ids': input_ids, 'attention_mask': attention_mask, 'min_new_tokens': self.output_length,
-               'max_new_tokens': self.output_length + 1})
+            **{
+                "input_ids": input_ids,
+                "attention_mask": attention_mask,
+                "min_new_tokens": self.output_length,
+                "max_new_tokens": self.output_length + 1,
+            }
+        )
 
-        logits = self.model(input_ids, attention_mask=attention_mask,
-                            decoder_input_ids=seq).logits
+        logits = self.model(input_ids, attention_mask=attention_mask, decoder_input_ids=seq).logits
 
         return self.transform_logits(logits)
 
@@ -551,13 +585,18 @@ class T5WithLoraGenerativeCLF2(nn.Module):
         attention_mask = cat_input_ids[1, :, :]
 
         generate_seq = self.model.generate(
-            **{'input_ids': input_ids, 'attention_mask': attention_mask, 'min_new_tokens': self.output_length,
-               'max_new_tokens': self.output_length + 1})
+            **{
+                "input_ids": input_ids,
+                "attention_mask": attention_mask,
+                "min_new_tokens": self.output_length,
+                "max_new_tokens": self.output_length + 1,
+            }
+        )
 
         return generate_seq
 
     def transform_logits(self, logit):
-        logits = logit[:, :self.output_length, self.interested_tokens]
+        logits = logit[:, : self.output_length, self.interested_tokens]
         return logits
 
     def train(self: T, mode: bool = True) -> T:
@@ -577,7 +616,7 @@ class T5LocationClassification(nn.Module):
         self.device = device
 
     def forward(self, _, logits):
-        logits = logits[:, self.st_token:self.ed_token, :]
+        logits = logits[:, self.st_token : self.ed_token, :]
         all_prob = torch.Tensor().requires_grad_().to(self.device)
         for token_label in self.candidate_output_token:
             label_prob = logits[:, 0, token_label[0]]
@@ -619,7 +658,7 @@ class T5WithLoraGenerativeCLF3(nn.Module):
                 target_modules=["q", "v"],
                 lora_dropout=0.01,
                 bias="lora_only",
-                task_type=TaskType.SEQ_2_SEQ_LM
+                task_type=TaskType.SEQ_2_SEQ_LM,
             )
             # prepare int-8 model for training
             self.model = prepare_model_for_kbit_training(self.model)
@@ -651,7 +690,7 @@ class T5WithLoraGenerativeCLF3(nn.Module):
             label_token[-1] = self._space_token
             label_token += [self._space_token] * (self.token_each_label - len(label_token))
             label_token[-1] = self._comma_token
-            original_label = label[:label.find(':')]
+            original_label = label[: label.find(":")]
             if original_label not in map_label_tokens:
                 map_label_tokens[original_label] = []
             map_label_tokens[original_label].append(label_token)
@@ -679,8 +718,12 @@ class T5WithLoraGenerativeCLF3(nn.Module):
         label_input_ids = cat_encoded_label[0, :, :]
         label_attention_mask = cat_encoded_label[1, :, :]
         # Need label to generate
-        logits = self.model(input_ids, attention_mask=attention_mask,
-                            labels=label_input_ids, decoder_attention_mask=label_attention_mask).logits
+        logits = self.model(
+            input_ids,
+            attention_mask=attention_mask,
+            labels=label_input_ids,
+            decoder_attention_mask=label_attention_mask,
+        ).logits
         return self.transform_logits(logits)
 
     def _inference_forward(self, cat_input_ids):
@@ -688,16 +731,20 @@ class T5WithLoraGenerativeCLF3(nn.Module):
         attention_mask = cat_input_ids[1, :, :]
 
         seq = self.model.generate(
-            **{'input_ids': input_ids, 'attention_mask': attention_mask, 'min_new_tokens': self.output_length,
-               'max_new_tokens': self.output_length + 1})
+            **{
+                "input_ids": input_ids,
+                "attention_mask": attention_mask,
+                "min_new_tokens": self.output_length,
+                "max_new_tokens": self.output_length + 1,
+            }
+        )
 
-        logits = self.model(input_ids, attention_mask=attention_mask,
-                            decoder_input_ids=seq).logits
+        logits = self.model(input_ids, attention_mask=attention_mask, decoder_input_ids=seq).logits
 
         return self.transform_logits(logits)
 
     def transform_logits(self, logit):
-        logits = logit[:, :self.output_length, self.interested_tokens]
+        logits = logit[:, : self.output_length, self.interested_tokens]
         return logits
 
     def train(self: T, mode: bool = True) -> T:
@@ -719,7 +766,7 @@ class T5LabelLocationClassification(nn.Module):
         self.device = device
 
     def forward(self, _, logits):
-        logits = logits[:, self.st_token:self.ed_token, self.neg_token + self.pos_token]
+        logits = logits[:, self.st_token : self.ed_token, self.neg_token + self.pos_token]
         logits = self.sigmoid(logits)
         neg_prob = logits[:, 0, 0]
         for i in range(1, len(self.pos_token)):
@@ -735,7 +782,7 @@ class T5LabelLocationClassification(nn.Module):
         all_prob = torch.concat((neg_prob, pos_prob), dim=-1)
         all_prob = self.softmax(all_prob)
         return all_prob
-    
+
 
 class MultipleClassYNLlama3(nn.Module):
     def __init__(self, model_name, tokenizer, device="cpu", adapter=False):
@@ -747,16 +794,12 @@ class MultipleClassYNLlama3(nn.Module):
             return_dict=True,
             torch_dtype=torch.float16,
             device_map={"": device},
-            )
+        )
         if adapter:
             print("Using Lora")
-            
+
             lora_config = LoraConfig(
-                r=16,
-                lora_alpha=32,
-                target_modules=['q_proj', 'v_proj'],
-                lora_dropout=0.05,
-                bias="none"
+                r=16, lora_alpha=32, target_modules=["q_proj", "v_proj"], lora_dropout=0.05, bias="none"
             )
             # prepare int-8 model for training
             self.model = prepare_model_for_kbit_training(self.model)
@@ -771,7 +814,7 @@ class MultipleClassYNLlama3(nn.Module):
 
     def forward(self, input_ids):
         logits = self.model(input_ids).logits
-        first_token = logits[:, -1, :] # Select the first output token
+        first_token = logits[:, -1, :]  # Select the first output token
 
         # token for YES and NO
         selected_logits = first_token[:, [9642, 2822]]
@@ -789,8 +832,12 @@ class Llama3Tokenizer:
     def __call__(self, _, questions, stories):
         prompts = []
         for ind, question in enumerate(questions):
-            prompts.append("You will answer the question based on the following context: " + stories[
-                ind] + "\n Question: " + question)
+            prompts.append(
+                "You will answer the question based on the following context: "
+                + stories[ind]
+                + "\n Question: "
+                + question
+            )
         encoded_input = self.tokenizer(prompts, padding="max_length", truncation=True)
         input_ids = encoded_input["input_ids"]
         return torch.LongTensor(input_ids)

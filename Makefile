@@ -11,22 +11,22 @@ install:
 	poetry install
 
 baseline-yn:
-	python main.py $(PY_ARGS) --train_file ORIGIN --test_file ORIGIN --model $(MODEL)
+	python src/main.py $(PY_ARGS) --train_file ORIGIN --test_file ORIGIN --model $(MODEL)
 
 primal-dual-yn:
-	python main.py $(PY_ARGS) --train_file ORIGIN --test_file ORIGIN --pmd T --constraints T --model $(MODEL)
+	python src/main.py $(PY_ARGS) --train_file ORIGIN --test_file ORIGIN --pmd T --constraints T --model $(MODEL)
 
 primal-dual-qchain-yn:
-	python main.py $(PY_ARGS) --train_file SPARTUN --test_file SPARTUN --pmd T --constraints T --save T --save_file Q_chain_T5 --model $(MODEL)
+	python src/main.py $(PY_ARGS) --train_file SPARTUN --test_file SPARTUN --pmd T --constraints T --save T --save_file Q_chain_T5 --model $(MODEL)
 
 baseline-fr:
-	python main_rel.py $(PY_ARGS) --train_file ORIGIN --test_file ORIGIN --model $(MODEL)
+	python src/main_rel.py $(PY_ARGS) --train_file ORIGIN --test_file ORIGIN --model $(MODEL)
 
 primal-dual-fr:
-	python main_rel.py $(PY_ARGS) --train_file ORIGIN --test_file ORIGIN --pmd T --constraints T --model $(MODEL)
+	python src/main_rel.py $(PY_ARGS) --train_file ORIGIN --test_file ORIGIN --pmd T --constraints T --model $(MODEL)
 
 primal-dual-qchain-fr:
-	python main_rel.py $(PY_ARGS) --train_file SPARTUN --test_file SPARTUN --pmd T --constraints T --save T --save_file Q_chain_T5 --model $(MODEL)
+	python src/main_rel.py $(PY_ARGS) --train_file SPARTUN --test_file SPARTUN --pmd T --constraints T --save T --save_file Q_chain_T5 --model $(MODEL)
 
 tests:
-	poetry run pytest tests
+	poetry run pytest tests --cov=src --cov-report=term-missing
