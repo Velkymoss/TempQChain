@@ -1,5 +1,7 @@
+from typing import Any
+
 from pydantic import BaseModel
-from typing import Optional, Any
+
 
 class SPARTUNQuestion(BaseModel):
     question: str
@@ -7,12 +9,12 @@ class SPARTUNQuestion(BaseModel):
     candidate_answers: list[str]
     question_info: dict[str, Any]
     answer: list[str]
-    query: list[str] # query is a list of object strings
+    query: list[str]  # query is a list of object strings
 
     @property
     def target_relation(self) -> str:
         """Return the target_relation as an uppercase string."""
-        rel = self.question_info.get('target_relation')
+        rel = self.question_info.get("target_relation")
         if isinstance(rel, list):
             rel = rel[0]
         return rel.upper() if rel else None
@@ -20,10 +22,11 @@ class SPARTUNQuestion(BaseModel):
     @property
     def asked_relation(self) -> str:
         """Return the asked_relation as an uppercase string."""
-        rel = self.question_info.get('asked_relation')
+        rel = self.question_info.get("asked_relation")
         if isinstance(rel, list):
             rel = rel[0]
         return rel.upper() if rel else None
+
 
 class SPARTUNStory(BaseModel):
     # Mandatory
