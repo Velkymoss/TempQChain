@@ -1,4 +1,5 @@
 import random
+from typing import Literal
 
 from domino_readers.data_models import SPARTUNQuestion, SPARTUNStory
 from domino_readers.utils import VOCABULARY, label_fr_to_int
@@ -24,6 +25,13 @@ class TrainReader:
         self.relation_info = {}
         self.question_id = {}
         self.run_id_within_q = 0
+        # reset per question
+        self.reasoning_steps_from_target = 0
+        self.added_questions = []
+        # reset per current fact
+        self.previous_ids = []
+        # reset per reasoning step
+        self.new_level = []
 
     def process_data(self) -> list[dict]:
         for story in self.data:
@@ -50,16 +58,16 @@ class TrainReader:
 
             self.count_original += 1
 
-            added_questions = self._process_question(question, story)
+            self._process_question(question, story)
 
-            if len(added_questions) not in self.all_batch_dynamic_info:
-                self.all_batch_dynamic_info[len(added_questions)] = 0
-            self.all_batch_dynamic_info[len(added_questions)] += 1
+            if len(self.added_questions) not in self.all_batch_dynamic_info:
+                self.all_batch_dynamic_info[len(self.added_questions)] = 0
+            self.all_batch_dynamic_info[len(self.added_questions)] += 1
 
-            batch_question = self._build_batch_question(added_questions, story, question)
+            batch_question = self._build_batch_question(story, question)
             self.dataset.append(batch_question)
 
-    def _process_question(self, question: SPARTUNQuestion, story: SPARTUNStory) -> list:
+    def _process_question(self, question: SPARTUNQuestion, story: SPARTUNStory):
         # Extracting objects from question
         obj1, obj2 = question.query
 
@@ -67,9 +75,9 @@ class TrainReader:
         asked_question = (obj1, obj2, question.asked_relation)
         # current_key: str = 'obj1:obj2:asked_relation' - related to asked_question
         current_key = self._create_key(*asked_question)
-
-        added_questions = []  # questions to be added to the dataset
-        reasoning_steps_from_target = self.upward_level
+        # reset self.added_questions
+        self.added_questions = []
+        self.reasoning_steps_from_target = self.upward_level
 
         # Create question id of current answer
         if current_key not in self.question_id:
@@ -78,23 +86,21 @@ class TrainReader:
 
         label = self._get_label(question)
 
-        added_questions.append((question.question, label, current_key))
+        self.added_questions.append((question.question, label, current_key))
 
         if self.question_type == "YN":
             # If the answer of question is no, adding another question asking the same thing but "Yes" input
             if label.lower() == "no":
                 yes_question = self._create_yes_question_for_no(target_question, current_key, story)
-                added_questions.append(yes_question)
+                self.added_questions.append(yes_question)
 
-                reasoning_steps_from_target -= 1
+                self.reasoning_steps_from_target -= 1
 
-        self._process_reasoning_steps(target_question, reasoning_steps_from_target, story, added_questions)
+        self._process_reasoning_steps(target_question, story)
 
-        return added_questions
-
-    def _build_batch_question(self, added_questions: list, story: SPARTUNStory, question: SPARTUNQuestion) -> list:
+    def _build_batch_question(self, story: SPARTUNStory, question: SPARTUNQuestion) -> list:
         batch_question = []
-        for added_question, label, question_key in added_questions[::-1]:
+        for added_question, label, question_key in self.added_questions[::-1]:
             batch_question.append(
                 (
                     added_question,
@@ -112,66 +118,68 @@ class TrainReader:
     def _process_reasoning_steps(
         self,
         target_question: tuple[str, str, str],
-        reasoning_steps_from_target: int,
         story: SPARTUNStory,
-        added_questions: list,
     ) -> None:
         current_level = [target_question]
-        for _ in range(reasoning_steps_from_target):
-            new_level = []
+        for step in range(self.reasoning_steps_from_target):
+            self.new_level = []
             for current_fact in current_level:
-                current_key = self._create_key(*current_fact)
-                fact_info_key = self._create_key(current_fact[0], current_fact[1], "")
-                previous_ids = []
+                previous_facts, current_key = self._process_current_fact(current_fact, story)
 
-                if current_key not in self.question_id:
-                    self.question_id[current_key] = self.run_id_within_q
-                    self.run_id_within_q += 1
-                try:
-                    previous_facts = story.facts_info[fact_info_key][current_fact[2]]["previous"]
-                except KeyError:
-                    # logger.warning(f"KeyError for fact_info_key: {fact_info_key} in story: {story.story_text}")
-                    continue
+                for previous_fact in previous_facts:
+                    self._process_previous_fact(previous_fact, story)
+                    current_level = self.new_level
 
-                for previous in previous_facts:
-                    previous_key = self._create_key(*previous)
-                    fact_info_prev_key = self._create_key(previous[0], previous[1], "")
-
-                    if previous_key not in self.question_id:
-                        self.question_id[previous_key] = self.run_id_within_q
-                        self.run_id_within_q += 1
-
-                    previous_ids.append(str(self.question_id[previous_key]))
-                    new_level.append(previous)
-
-                    if self.question_type == "YN":
-                        added_questions.append(
-                            (
-                                self._create_simple_question(*previous, story.objects_info),
-                                "Yes",
-                                previous_key,
-                            )
-                        )
-                    else:
-                        added_questions.append(
-                            (
-                                self._create_simple_question(*previous, story.objects_info),
-                                label_fr_to_int(list(story.facts_info[fact_info_prev_key].keys())),
-                                previous_key,
-                            )
-                        )
-                    current_level = new_level
-
-                relation_type = self._get_relation_type(previous_ids)
+                relation_type = self._get_relation_type()
                 self.relation_info[current_key] = relation_type
 
+    def _process_current_fact(
+        self, current_fact: tuple[str, str, str], story: SPARTUNStory
+    ) -> tuple[list[list[str]], str]:
+        current_key = self._create_key(*current_fact)
+        fact_info_key = self._create_key(current_fact[0], current_fact[1], "")
+        self.previous_ids = []
+        if current_key not in self.question_id:
+            self.question_id[current_key] = self.run_id_within_q
+            self.run_id_within_q += 1
+        try:
+            previous_facts = story.facts_info[fact_info_key][current_fact[2]]["previous"]
+            return previous_facts, current_key
+        except KeyError:
+            logger.warning(f"Key {fact_info_key} not found in story facts_info.")
+            return [], current_key
+
+    def _process_previous_fact(self, previous_fact: list[str], story: SPARTUNStory) -> None:
+        previous_key = self._create_key(*previous_fact)
+        fact_info_prev_key = self._create_key(previous_fact[0], previous_fact[1], "")
+
+        if previous_key not in self.question_id:
+            self.question_id[previous_key] = self.run_id_within_q
+            self.run_id_within_q += 1
+
+        self.previous_ids.append(str(self.question_id[previous_key]))
+        self.new_level.append(previous_fact)
+
+        if self.question_type == "YN":
+            self.added_questions.append(
+                (
+                    self._create_simple_question(*previous_fact, story.objects_info),
+                    "Yes",
+                    previous_key,
+                )
+            )
+        else:
+            self.added_questions.append(
+                (
+                    self._create_simple_question(*previous_fact, story.objects_info),
+                    label_fr_to_int(list(story.facts_info[fact_info_prev_key].keys())),
+                    previous_key,
+                )
+            )
+
     def _create_yes_question_for_no(
-        self,
-        target_question: tuple[str, str, str],
-        current_key: str,
-        story: SPARTUNStory,
-        added_questions: list[tuple],
-    ):
+        self, target_question: tuple[str, str, str], current_key: str, story: SPARTUNStory
+    ) -> tuple[str, Literal["Yes"], str]:
         # current_key: str = 'obj1:obj2:target_relation' - related to target_question
         target_key = self._create_key(*target_question)
         yes_question = (
@@ -187,14 +195,14 @@ class TrainReader:
 
         return yes_question
 
-    def _get_relation_type(self, previous_ids: list) -> str:
-        size_relation = len(previous_ids)
+    def _get_relation_type(self) -> str:
+        size_relation = len(self.previous_ids)
 
         if size_relation == 0:
             return ""
 
         relation_type = "symmetric" if size_relation == 1 else "transitive" if size_relation == 2 else "transitive_topo"
-        return relation_type + "," + ",".join(previous_ids)
+        return relation_type + "," + ",".join(self.previous_ids)
 
     def _get_label(self, question: SPARTUNQuestion) -> str:
         """
