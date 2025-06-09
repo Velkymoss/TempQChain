@@ -17,7 +17,7 @@ def generated_dataset():
     # seed needs to be set for reproducibility!
     random.seed(42)
     dataset = DomiKnowS_reader(
-        "DataSet/train_FR_v3.json",
+        "data/train_FR_v3.json",
         "FR",
         upward_level=12,
         size=1000000,

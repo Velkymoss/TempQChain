@@ -15,7 +15,7 @@ def train_reader(
     *,
     limit_questions: int = 300000,
     upward_level: int = 0,
-) -> list[dict]:
+) -> list:
     """
     Usage: loads SPARTUN with chain of reasoning for training
     Args:

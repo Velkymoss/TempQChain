@@ -11,7 +11,7 @@ logger = get_logger(__name__)
 
 
 class TrainReader:
-    def __init__(self, data: list, question_type: str, limit_questions: int, upward_level: int):
+    def __init__(self, data: list[dict], question_type: str, limit_questions: int, upward_level: int):
         self.data = data
         self.question_type = question_type
         self.limit_questions = limit_questions
@@ -98,7 +98,7 @@ class TrainReader:
 
         self._process_reasoning_steps(target_question, story)
 
-    def _build_batch_question(self, story: SPARTUNStory, question: SPARTUNQuestion) -> list:
+    def _build_batch_question(self, story: SPARTUNStory, question: SPARTUNQuestion) -> list[tuple]:
         batch_question = []
         for added_question, label, question_key in self.added_questions[::-1]:
             batch_question.append(
