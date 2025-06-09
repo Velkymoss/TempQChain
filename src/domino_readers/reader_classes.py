@@ -220,6 +220,7 @@ class TrainReader:
     def _create_key(self, obj1: str, obj2: str, relation: str) -> str:
         """
         Creates a key string for the question based on the objects and their relation.
+        Usage in TrainReader: converts tuples target_question and asked_question to obj:obj:relatrion str
 
         Args:
             obj1 (str): The first object.
@@ -230,13 +231,10 @@ class TrainReader:
             str: A key string in the format "{obj1}:{obj2}[:{relation}]" where the relation
                  is only included for Yes/No questions.
         """
-        # if self.question_type == "YN" and relation:
-        #     return f"{obj1}:{obj2}:{relation}"
-        # if self.question_type == "YN" and not relation:
-        #     return f"{obj1}:{obj2}"
-        if self.question_type == "YN":
+        if self.question_type == "YN" and relation:
             return f"{obj1}:{obj2}:{relation}"
-        return f"{obj1}:{obj2}"
+        else:
+            return f"{obj1}:{obj2}"
 
     def _create_simple_question(self, obj1: str, obj2: str, relation: str, obj_info: dict) -> str:
         """
