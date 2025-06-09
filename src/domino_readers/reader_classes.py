@@ -30,8 +30,6 @@ class TrainReader:
         self.added_questions = []
         # reset per current fact
         self.previous_ids = []
-        # reset per reasoning step
-        self.new_level = []
 
     def process_data(self) -> list[dict]:
         for story in self.data:
@@ -122,7 +120,7 @@ class TrainReader:
     ) -> None:
         current_level = [target_question]
         for step in range(self.reasoning_steps_from_target):
-            self.new_level = []
+            next_level = []
             for current_fact in current_level:
                 previous_facts, current_key = self._process_current_fact(current_fact, story)
 
@@ -133,8 +131,8 @@ class TrainReader:
                     # we iterate over previous fact after we processed the current fact,
                     # in other words:
                     # previous_facts: list[list[tuple["obj1,", "obj2", "relation"]]] becomes current_level
-                    self.new_level.append(previous_fact)
-                    current_level = self.new_level
+                    next_level.append(previous_fact)
+                    current_level = next_level
 
                 relation_type = self._get_relation_type()
                 self.relation_info[current_key] = relation_type
@@ -164,8 +162,6 @@ class TrainReader:
             self.run_id_within_q += 1
 
         self.previous_ids.append(str(self.question_id[previous_key]))
-
-        # self.new_level.append(previous_fact)
 
         if self.question_type == "YN":
             self.added_questions.append(
