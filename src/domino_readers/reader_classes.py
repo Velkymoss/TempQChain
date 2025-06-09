@@ -127,7 +127,13 @@ class TrainReader:
                 previous_facts, current_key = self._process_current_fact(current_fact, story)
 
                 for previous_fact in previous_facts:
-                    self._process_previous_fact(previous_fact, story)
+                    self._create_question_from_previous_fact(previous_fact, story)
+
+                    # add previous facts to new level -> set to current_level:
+                    # we iterate over previous fact after we processed the current fact,
+                    # in other words:
+                    # previous_facts: list[list[tuple["obj1,", "obj2", "relation"]]] becomes current_level
+                    self.new_level.append(previous_fact)
                     current_level = self.new_level
 
                 relation_type = self._get_relation_type()
@@ -149,7 +155,7 @@ class TrainReader:
             logger.warning(f"Key {fact_info_key} not found in story facts_info.")
             return [], current_key
 
-    def _process_previous_fact(self, previous_fact: list[str], story: SPARTUNStory) -> None:
+    def _create_question_from_previous_fact(self, previous_fact: list[str], story: SPARTUNStory) -> None:
         previous_key = self._create_key(*previous_fact)
         fact_info_prev_key = self._create_key(previous_fact[0], previous_fact[1], "")
 
@@ -158,7 +164,8 @@ class TrainReader:
             self.run_id_within_q += 1
 
         self.previous_ids.append(str(self.question_id[previous_key]))
-        self.new_level.append(previous_fact)
+
+        # self.new_level.append(previous_fact)
 
         if self.question_type == "YN":
             self.added_questions.append(
