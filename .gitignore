@@ -9,5 +9,5 @@ logs/
 training.txt
 debug/
 .coverage
-!data/
 data/*
+!data/README.md

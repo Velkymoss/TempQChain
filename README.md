@@ -19,8 +19,7 @@ make install
 
 The program will save the parameters of the model in Models folder for any further use.
 
-Data available here: https://drive.google.com/drive/folders/16nBxg1xcPfuQu58Df-PSQZYABsgmk9KQ?usp=sharing.
-Note that the augmented Q-Chain part in train_YN_v3.json and train_FR_v3.json on fact_infos parameters
+For the data see data/README.md
 
 
 ### Supported models:
