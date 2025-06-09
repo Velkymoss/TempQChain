@@ -9,3 +9,5 @@ logs/
 training.txt
 debug/
 .coverage
+!data/
+data/*

@@ -209,7 +209,7 @@ def DomiKnowS_reader(
 
     additional_text = ""
     if rule_text:
-        with open("DataSet/rules.txt", "r") as rules:
+        with open("data/rules.txt", "r") as rules:
             additional_text = rules.readline()
     return_dataset = []
     current_batch_size = 0
@@ -270,7 +270,7 @@ def DomiKnowS_reader(
 
 if __name__ == "__main__":
     dataset = DomiKnowS_reader(
-        "DataSet/" + "train_FR_v3.json",
+        "data/" + "train_FR_v3.json",
         "FR",
         size=10,
         upward_level=3,

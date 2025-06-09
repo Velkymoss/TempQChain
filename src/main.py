@@ -246,9 +246,9 @@ def main(args):
     )
 
     file_path = (
-        ("DataSet/" + train_file)
+        ("data/" + train_file)
         if isinstance(train_file, str)
-        else ["DataSet/" + file_name for file_name in train_file]
+        else ["data/" + file_name for file_name in train_file]
     )
 
     training_set = DomiKnowS_reader(
@@ -278,7 +278,7 @@ def main(args):
     )
 
     file_path = (
-        ("DataSet/" + test_file) if isinstance(test_file, str) else ["DataSet/" + file_name for file_name in test_file]
+        ("data/" + test_file) if isinstance(test_file, str) else ["data/" + file_name for file_name in test_file]
     )
     testing_set = DomiKnowS_reader(
         file_path,
@@ -308,7 +308,7 @@ def main(args):
     )
 
     file_path = (
-        ("DataSet/" + eval_file) if isinstance(eval_file, str) else ["DataSet/" + file_name for file_name in eval_file]
+        ("data/" + eval_file) if isinstance(eval_file, str) else ["data/" + file_name for file_name in eval_file]
     )
     eval_set = DomiKnowS_reader(
         file_path,

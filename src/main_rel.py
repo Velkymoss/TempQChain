@@ -370,7 +370,7 @@ def main(args):
     )
 
     training_set = DomiKnowS_reader(
-        "DataSet/" + train_file,
+        "data/" + train_file,
         "FR",
         type_dataset=args.train_file.upper(),
         size=args.train_size,
@@ -390,7 +390,7 @@ def main(args):
     )
 
     testing_set = DomiKnowS_reader(
-        "DataSet/" + test_file,
+        "data/" + test_file,
         "FR",
         type_dataset=args.train_file.upper(),
         size=args.test_size,
@@ -411,7 +411,7 @@ def main(args):
     )
 
     eval_set = DomiKnowS_reader(
-        "DataSet/" + eval_file,
+        "data/" + eval_file,
         "FR",
         type_dataset=args.train_file.upper(),
         size=args.test_size,
@@ -458,7 +458,7 @@ def main(args):
             for i in range(10):
                 print("Testing {:} steps".format(i))
                 testing_set = DomiKnowS_reader(
-                    "DataSet/" + test_file,
+                    "data/" + test_file,
                     "FR",
                     type_dataset=args.train_file.upper(),
                     size=args.test_size,
