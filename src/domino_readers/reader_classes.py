@@ -150,6 +150,8 @@ class TrainReader:
             previous_facts = story.facts_info[fact_info_key][current_fact[2]]["previous"]
             return previous_facts, current_key
         except KeyError:
+            # algorithm looks up "0x0:0" in facts_info dict, non-existent there -> dataset issue,
+            # produces key error in original code
             logger.warning(f"Key {fact_info_key} not found in story facts_info.")
             return [], current_key
 
