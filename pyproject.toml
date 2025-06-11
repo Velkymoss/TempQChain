@@ -47,22 +47,22 @@ skip_covered = true
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "src/domino_readers",
-    "src/domino_graphs",
-    "src/domini_programs",
+    "src/readers",
+    "src/graphs",
+    "src/programs",
 ]
 
 [tool.hatch.build.targets.wheel]
 include = [
-    "src/domino_readers",
-    "src/domino_graphs",
-    "src/domini_programs",
+    "src/readers",
+    "src/graphs",
+    "src/programs",
 ]
 
 [tool.hatch.build.targets.wheel.sources]
-"src/domino_readers" = "domino_readers"
-"src/domino_graphs" = "domino_graphs"
-"src/domini_programs" = "domini_programs"
+"src/readers" = "readers"
+"src/graphs" = "graphs"
+"src/programs" = "programs"
 
 [build-system]
 requires = ["hatchling"]

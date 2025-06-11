@@ -2,9 +2,9 @@ import json
 
 import tqdm
 
-from domino_readers.reader_classes import TrainReader
-from domino_readers.utils import label_fr_to_int
 from logger import get_logger
+from readers.reader_classes import TrainReader
+from readers.utils import label_fr_to_int
 
 logger = get_logger(__name__)
 

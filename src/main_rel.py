@@ -6,7 +6,8 @@ import torch
 import tqdm
 import transformers
 
-from domino_programs.program_declaration import (
+from logger import get_logger
+from programs.program_declaration import (
     program_declaration_spartun_fr,
     program_declaration_spartun_fr_T5,
     program_declaration_spartun_fr_T5_v2,
@@ -14,19 +15,18 @@ from domino_programs.program_declaration import (
     program_declaration_StepGame,
     program_declaration_StepGame_T5,
 )
-from domino_programs.program_declaration_SPARTUN_FR import (
+from programs.program_declaration_SPARTUN_FR import (
     program_declaration_spartun_fr_T5_v4,
     program_declaration_spartun_fr_T5_v5,
 )
-from domino_readers.readers import DomiKnowS_reader
-from logger import get_logger
+from readers.file_loaders import DomiKnowS_reader
 
 logger = get_logger(__name__)
 
 
 def eval(program, testing_set, cur_device, args, print_result=False, StepGame_number=None, multilabel=False):
     if args.test_file.upper() != "STEPGAME":
-        from domino_graphs.graph_spartun_rel import (
+        from graphs.graph_spartun_rel import (
             above,
             behind,
             below,
@@ -80,7 +80,7 @@ def eval(program, testing_set, cur_device, args, print_result=False, StepGame_nu
             "contain",
         ]
     else:
-        from domino_graphs.graph_stepgame import (
+        from graphs.graph_stepgame import (
             above,
             below,
             left,

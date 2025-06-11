@@ -7,15 +7,15 @@ import tqdm
 from domiknows.program.model.base import Mode
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, precision_score, recall_score
 
-from domino_programs.program_declaration import program_declaration
-from domino_readers.readers import DomiKnowS_reader
 from logger import get_logger
+from programs.program_declaration import program_declaration
+from readers.file_loaders import DomiKnowS_reader
 
 logger = get_logger(__name__)
 
 
 def eval(program, testing_set, cur_device, args):
-    from domino_graphs.graph import answer_class
+    from graphs.graph import answer_class
 
     labels = ["Yes", "No"]
     accuracy_ILP = 0
@@ -73,7 +73,7 @@ def eval(program, testing_set, cur_device, args):
 
 
 def train(program, train_set, eval_set, cur_device, limit, lr, program_name="DomiKnow", args=None):
-    from domino_graphs.graph import answer_class
+    from graphs.graph import answer_class
 
     def evaluate():
         labels = ["Yes", "No"]
@@ -246,9 +246,7 @@ def main(args):
     )
 
     file_path = (
-        ("data/" + train_file)
-        if isinstance(train_file, str)
-        else ["data/" + file_name for file_name in train_file]
+        ("data/" + train_file) if isinstance(train_file, str) else ["data/" + file_name for file_name in train_file]
     )
 
     training_set = DomiKnowS_reader(

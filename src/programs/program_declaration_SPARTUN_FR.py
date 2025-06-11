@@ -2,8 +2,8 @@ from domiknows.sensor.pytorch.learners import ModuleLearner
 from domiknows.sensor.pytorch.relation_sensors import CompositionCandidateSensor
 from domiknows.sensor.pytorch.sensors import FunctionalSensor, JointSensor, ReaderSensor
 
-from domino_programs.models import *
-from domino_programs.utils import *
+from programs.models import *
+from programs.utils import *
 
 
 def program_declaration_spartun_fr(
@@ -19,7 +19,7 @@ def program_declaration_spartun_fr(
     model="bert",
 ):
     program = None
-    from domino_graphs.graph_spartun_rel import (
+    from graphs.graph_spartun_rel import (
         above,
         behind,
         below,
@@ -515,7 +515,7 @@ def program_declaration_spartun_fr(
 def program_declaration_spartun_fr_T5(
     device, *, pmd=False, beta=0.5, sampling=False, sampleSize=1, dropout=False, constraints=False, spartun=True
 ):
-    from domino_graphs.graph_spartun_rel import (
+    from graphs.graph_spartun_rel import (
         above,
         behind,
         below,
@@ -770,7 +770,7 @@ def program_declaration_spartun_fr_T5(
 def program_declaration_spartun_fr_T5_v2(
     device, *, pmd=False, beta=0.5, sampling=False, sampleSize=1, dropout=False, constraints=False, spartun=True
 ):
-    from domino_graphs.graph_spartun_rel import (
+    from graphs.graph_spartun_rel import (
         above,
         behind,
         below,
@@ -1023,7 +1023,7 @@ def program_declaration_spartun_fr_T5_v3(
     device, *, pmd=False, beta=0.5, sampling=False, sampleSize=1, dropout=False, constraints=False, spartun=True
 ):
     program = None
-    from domino_graphs.graph_spartun_rel import (
+    from graphs.graph_spartun_rel import (
         above,
         behind,
         below,
@@ -1416,7 +1416,7 @@ def program_declaration_spartun_fr_T5_v4(
     device, *, pmd=False, beta=0.5, sampling=False, sampleSize=1, dropout=False, constraints=False, spartun=True
 ):
     program = None
-    from domino_graphs.graph_spartun_rel import (
+    from graphs.graph_spartun_rel import (
         above,
         behind,
         below,
@@ -1913,7 +1913,7 @@ def program_declaration_spartun_fr_T5_v5(
     device, *, pmd=False, beta=0.5, sampling=False, sampleSize=1, dropout=False, constraints=False, spartun=True
 ):
     program = None
-    from domino_graphs.graph_spartun_rel import (
+    from graphs.graph_spartun_rel import (
         above,
         behind,
         below,

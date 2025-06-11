@@ -1,15 +1,15 @@
 from domiknows.sensor.pytorch.learners import ModuleLearner
 from domiknows.sensor.pytorch.sensors import FunctionalSensor, JointSensor, ReaderSensor
 
-from domino_programs.models import *
-from domino_programs.utils import *
+from programs.models import *
+from programs.utils import *
 
 
 def program_declaration_StepGame(
     device, *, pmd=False, beta=0.5, sampling=False, sampleSize=1, dropout=False, constraints=False, spartun=True
 ):
     program = None
-    from domino_graphs.graph_stepgame import (
+    from graphs.graph_stepgame import (
         above,
         below,
         graph,
@@ -226,7 +226,7 @@ def program_declaration_StepGame(
 def program_declaration_StepGame_T5(
     device, *, pmd=False, beta=0.5, sampling=False, sampleSize=1, dropout=False, constraints=False, spartun=True
 ):
-    from domino_graphs.graph_stepgame import (
+    from graphs.graph_stepgame import (
         above,
         below,
         graph,

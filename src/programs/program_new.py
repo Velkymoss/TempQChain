@@ -3,14 +3,14 @@ from domiknows.sensor.pytorch.learners import ModuleLearner
 from domiknows.sensor.pytorch.relation_sensors import CompositionCandidateSensor
 from domiknows.sensor.pytorch.sensors import FunctionalSensor, JointSensor, ReaderSensor
 
-from domino_programs.models import *
-from domino_programs.utils import *
+from programs.models import *
+from programs.utils import *
 
 
 def program_declaration(
     cur_device, *, pmd=False, beta=0.5, sampling=False, sampleSize=1, dropout=False, constraints=False, model="bert"
 ):
-    from domino_graphs.graph import (
+    from graphs.graph import (
         answer_class,
         graph,
         question,

@@ -3,12 +3,12 @@ import random
 
 import pytest
 
-from src.domino_readers.readers import DomiKnowS_reader
+from readers.file_loaders import DomiKnowS_reader
 
 
 @pytest.fixture
 def comparison_dataset():
-    with open("tests/dataset_readers/data/test_integration_dataset.json", "r") as f:
+    with open("tests/readers/data/test_integration_dataset.json", "r") as f:
         return json.load(f)
 
 

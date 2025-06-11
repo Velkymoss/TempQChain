@@ -1,9 +1,9 @@
 import random
 from typing import Literal
 
-from domino_readers.data_models import SPARTUNQuestion, SPARTUNStory
-from domino_readers.utils import VOCABULARY, label_fr_to_int
 from logger import get_logger
+from readers.data_models import SPARTUNQuestion, SPARTUNStory
+from readers.utils import VOCABULARY, label_fr_to_int
 
 random.seed(42)
 
