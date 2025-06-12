@@ -43,7 +43,7 @@ def eval(program, testing_set, cur_device, args, print_result=False, StepGame_nu
             right,
             touch,
         )
-
+        
         all_labels = [
             left,
             right,
@@ -279,7 +279,7 @@ def train(program, train_set, eval_set, cur_device, limit, lr, check_epoch=1, pr
                 + "_model_"
                 + args.model
             )
-            old_file = new_file
+            # old_file = new_file
             program.save("Models/" + new_file)
     print("Best epoch ", best_epoch, file=training_file)
     training_file.close()
@@ -356,7 +356,7 @@ def main(args):
                 model=args.model,
             )
 
-    boolQ = args.train_file.upper() == "BOOLQ"
+    # boolQ = args.train_file.upper() == "BOOLQ"
     train_file = (
         "train.json"
         if args.train_file.upper() == "ORIGIN"
