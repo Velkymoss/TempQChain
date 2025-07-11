@@ -19,7 +19,7 @@ VOCABULARY = MappingProxyType(
         "NTPPI": ["contain[s]"],
     }
 )
-
+# TODO: Find the integers for the temporal labels
 LABELS_INT = MappingProxyType(
     {
         "LEFT": 1,

@@ -1,3 +1,4 @@
+import os
 import argparse
 import random
 
@@ -158,7 +159,7 @@ def eval(program, testing_set, cur_device, args, print_result=False, StepGame_nu
     accuracy = correct / total
 
     if print_result:
-        result_file = open("result.txt", "a")
+        result_file = open(os.path.join(args.results_path, "result.txt"), "a")
         print(
             "Program:",
             "Primal Dual" if args.pmd else "Sampling Loss" if args.sampling else "DomiKnowS",
@@ -248,7 +249,7 @@ def train(program, train_set, eval_set, cur_device, limit, lr, check_epoch=1, pr
                 + "_model_"
                 + args.model
             )
-            program.save("Models/" + new_file)
+            program.save(os.path.join(args.results_path, new_file))
         training_file.close()
 
     training_file = open("training.txt", "a")
@@ -280,7 +281,7 @@ def train(program, train_set, eval_set, cur_device, limit, lr, check_epoch=1, pr
                 + args.model
             )
             old_file = new_file
-            program.save("Models/" + new_file)
+            program.save(os.path.join(args.results_path, new_file))
     print("Best epoch ", best_epoch, file=training_file)
     training_file.close()
     return best_epoch
@@ -370,7 +371,7 @@ def main(args):
     )
 
     training_set = DomiKnowS_reader(
-        "data/" + train_file,
+        os.path.join(args.data_path, train_file),
         "FR",
         type_dataset=args.train_file.upper(),
         size=args.train_size,
@@ -390,7 +391,7 @@ def main(args):
     )
 
     testing_set = DomiKnowS_reader(
-        "data/" + test_file,
+        os.path.join(args.data_path, test_file),
         "FR",
         type_dataset=args.train_file.upper(),
         size=args.test_size,
@@ -411,7 +412,7 @@ def main(args):
     )
 
     eval_set = DomiKnowS_reader(
-        "data/" + eval_file,
+        os.path.join(args.data_path, eval_file),
         "FR",
         type_dataset=args.train_file.upper(),
         size=args.test_size,
@@ -427,7 +428,7 @@ def main(args):
     if args.loaded:
         if args.model_change:
             pretrain_model = torch.load(
-                "Models/" + args.loaded_file,
+                os.path.join(args.results_path, args.loaded_file),
                 map_location={
                     "cuda:0": cur_device,
                     "cuda:1": cur_device,
@@ -444,7 +445,7 @@ def main(args):
             program.model.load_state_dict(pretrain_dict)
         else:
             program.load(
-                "Models/" + args.loaded_file,
+                os.path.join(args.results_path, args.loaded_file),
                 map_location={
                     "cuda:0": cur_device,
                     "cuda:1": cur_device,
@@ -458,7 +459,7 @@ def main(args):
             for i in range(10):
                 print("Testing {:} steps".format(i))
                 testing_set = DomiKnowS_reader(
-                    "data/" + test_file,
+                    os.path.join(args.results_path, test_file),
                     "FR",
                     type_dataset=args.train_file.upper(),
                     size=args.test_size,
@@ -474,7 +475,7 @@ def main(args):
     elif args.loaded_train:
         if args.model_change:
             pretrain_model = torch.load(
-                "Models/" + args.loaded_file,
+                os.path.join(args.results_path, args.loaded_file),
                 map_location={
                     "cuda:0": cur_device,
                     "cuda:1": cur_device,
@@ -493,7 +494,7 @@ def main(args):
             program.model.load_state_dict(new_state_dict)
         else:
             program.load(
-                "Models/" + args.loaded_file,
+                os.path.join(args.results_path, args.loaded_file),
                 map_location={
                     "cuda:0": cur_device,
                     "cuda:1": cur_device,
@@ -516,6 +517,9 @@ if __name__ == "__main__":
     parser.add_argument("--test_size", dest="test_size", type=int, default=12)
     parser.add_argument("--train_size", dest="train_size", type=int, default=16)
     parser.add_argument("--batch_size", dest="batch_size", type=int, default=4)
+    parser.add_argument("--data_path", type=str, default="../data/", help="Path to the data folder")
+    parser.add_argument("--results_path", type=str, default="../models/",
+                        help="Path to the folder to save models and predictions")
     parser.add_argument("--train_file", type=str, default="SPARTUN", help="Option: SpaRTUN or Human")
     parser.add_argument("--test_file", type=str, default="SPARTUN", help="Option: SpaRTUN or Human")
     parser.add_argument("--text_rules", type=bool, default=False, help="Including rules as text or not")

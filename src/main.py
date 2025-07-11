@@ -1,3 +1,4 @@
+import os
 import argparse
 import random
 
@@ -158,7 +159,7 @@ def train(program, train_set, eval_set, cur_device, limit, lr, program_name="Dom
                 + str(args.model)
             )
             old_file = new_file
-            program.save("Models/" + new_file)
+            program.save(os.path.join(args.results_path, new_file))
         training_file.close()
 
     training_file = open("training.txt", "a")
@@ -204,7 +205,7 @@ def train(program, train_set, eval_set, cur_device, limit, lr, program_name="Dom
                 + str(args.model)
             )
             old_file = new_file
-            program.save("Models/" + new_file)
+            program.save(os.path.join(args.results_path, new_file))
     print("Best epoch ", best_epoch, file=training_file)
     training_file.close()
     return best_epoch
@@ -246,7 +247,7 @@ def main(args):
     )
 
     file_path = (
-        ("data/" + train_file) if isinstance(train_file, str) else ["data/" + file_name for file_name in train_file]
+        os.path.join(args.data_path, train_file) if isinstance(train_file, str) else [os.path.join(args.data_path, file_name) for file_name in train_file]
     )
 
     training_set = DomiKnowS_reader(
@@ -276,7 +277,7 @@ def main(args):
     )
 
     file_path = (
-        ("data/" + test_file) if isinstance(test_file, str) else ["data/" + file_name for file_name in test_file]
+        os.path.join(args.data_path, test_file) if isinstance(test_file, str) else [os.path.join(args.data_path, file_name) for file_name in test_file]
     )
     testing_set = DomiKnowS_reader(
         file_path,
@@ -306,7 +307,7 @@ def main(args):
     )
 
     file_path = (
-        ("data/" + eval_file) if isinstance(eval_file, str) else ["data/" + file_name for file_name in eval_file]
+        os.path.join(args.data_path, eval_file) if isinstance(eval_file, str) else [os.path.join(args.data_path, file_name) for file_name in eval_file]
     )
     eval_set = DomiKnowS_reader(
         file_path,
@@ -318,6 +319,7 @@ def main(args):
         rule_text=args.text_rules,
         reasoning_steps=None if args.reasoning_steps == -1 else args.reasoning_steps,
     )
+
     program_name = "PMD" if args.pmd else "Sampling" if args.sampling else "Base"
     program = program_declaration(
         cur_device,
@@ -330,10 +332,13 @@ def main(args):
         model=args.model.lower(),
     )
 
+    if not os.path.exists(args.results_path):
+        os.makedirs(args.results_path)
+
     if args.loaded:
         print(cur_device)
         program.load(
-            "Models/" + args.loaded_file,
+            os.path.join(args.results_path + args.loaded_file),
             map_location={
                 "cuda:0": cur_device,
                 "cuda:1": cur_device,
@@ -348,7 +353,7 @@ def main(args):
         eval(program, testing_set, cur_device, args)
     elif args.loaded_train:
         program.load(
-            "Models/" + args.loaded_file,
+            os.path.join(args.results_path + args.loaded_file),
             map_location={
                 "cuda:0": cur_device,
                 "cuda:1": cur_device,
@@ -373,6 +378,8 @@ if __name__ == "__main__":
     parser.add_argument("--test_size", dest="test_size", type=int, default=100000)
     parser.add_argument("--train_size", dest="train_size", type=int, default=100000)
     parser.add_argument("--batch_size", dest="batch_size", type=int, default=100000)
+    parser.add_argument("--data_path", type=str, default="../data/", help="Path to the data folder")
+    parser.add_argument("--results_path", type=str, default="../models/", help="Path to the folder to save models and predictions")
     parser.add_argument("--train_file", type=str, default="SPARTUN", help="Option: SpaRTUN or Human")
     parser.add_argument("--test_file", type=str, default="SPARTUN", help="Option: SpaRTUN or Human")
     parser.add_argument("--text_rules", type=bool, default=False, help="Including rules as text or not")
