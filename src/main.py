@@ -230,6 +230,8 @@ def main(args):
     boolQ = args.train_file.upper() == "BOOLQ"
     train_file = (
         "train.json"
+        if args.train_file.upper() == "TEMP"
+        else "train.json"
         if args.train_file.upper() == "ORIGIN"
         else "new_human_train.json"
         if args.train_file.upper() == "NEW"
@@ -256,14 +258,16 @@ def main(args):
         type_dataset=args.train_file.upper(),
         size=args.train_size,
         upward_level=8,
-        augmented=args.train_file.upper() == "SPARTUN",
+        augmented=args.use_chains,
         batch_size=args.batch_size,
         rule_text=args.text_rules,
         reasoning_steps=None if args.reasoning_steps == -1 else args.reasoning_steps,
     )
 
     test_file = (
-        "human_test.json"
+        "train.json"
+        if args.train_file.upper() == "TEMP"
+        else "human_test.json"
         if args.test_file.upper() == "HUMAN"
         else "new_human_test.json"
         if args.train_file.upper() == "NEW"
@@ -291,7 +295,9 @@ def main(args):
     )
 
     eval_file = (
-        "human_dev.json"
+        "train.json"
+        if args.train_file.upper() == "TEMP"
+        else "human_dev.json"
         if args.test_file.upper() == "HUMAN"
         else "new_human_dev.json"
         if args.train_file.upper() == "NEW"
@@ -380,8 +386,9 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", dest="batch_size", type=int, default=100000)
     parser.add_argument("--data_path", type=str, default="../data/", help="Path to the data folder")
     parser.add_argument("--results_path", type=str, default="../models/", help="Path to the folder to save models and predictions")
-    parser.add_argument("--train_file", type=str, default="SPARTUN", help="Option: SpaRTUN or Human")
-    parser.add_argument("--test_file", type=str, default="SPARTUN", help="Option: SpaRTUN or Human")
+    parser.add_argument("--use_chains", type=bool, default=True)
+    parser.add_argument("--train_file", type=str, default="TEMP", help="Option: Temp, SpaRTUN or Human")
+    parser.add_argument("--test_file", type=str, default="TEMP", help="Option: Temp, SpaRTUN or Human")
     parser.add_argument("--text_rules", type=bool, default=False, help="Including rules as text or not")
     parser.add_argument("--dropout", dest="dropout", type=bool, default=False)
     parser.add_argument("--pmd", dest="pmd", type=bool, default=False)

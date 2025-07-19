@@ -242,6 +242,7 @@ class TrainReader:
             return f"{obj1}:{obj2}"
 
     def _create_simple_question(self, obj1: str, obj2: str, relation: str, obj_info: dict) -> str:
+        # TODO: Not use this method
         """
         Generates a simple question string based on two objects, their relation, and the desired question type.
 
