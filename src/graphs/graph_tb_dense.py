@@ -7,7 +7,7 @@ Graph.clear()
 Concept.clear()
 Relation.clear()
 
-with Graph("spatial_QA_rule") as graph:
+with Graph("temporal_QA_rule") as graph:
     # Group of sentence
     story = Concept(name="story")
     question = Concept(name="question")
@@ -52,10 +52,36 @@ with Graph("spatial_QA_rule") as graph:
     tran_quest1, tran_quest2, tran_quest3 = transitive.has_a(arg11=question, arg22=question, arg33=question)
 
     # if A & B have relation x, B & C have relation x, then A & C have relation x
-    transitive_1 = [before, after, is_included, includes]
+    transitive_1 = [before, after, includes, is_included]
     for rel in transitive_1:
         ifL(
             andL(rel("x"), existsL(transitive("t", path=("x", transitive))), rel(path=("t", tran_quest2))),
-            rel(path=("t", tran_quest3)))
-        
-    # TODO: implement remaining transitivity rules
+            rel(path=("t", tran_quest3)),
+        )
+
+    # A<B & B includes C => A<C
+    ifL(
+        andL(before("x"), existsL(transitive("t", path=("x", transitive))), includes(path=("t", tran_quest2))),
+        before(path=("t", tran_quest3)),
+    )
+
+    # A>B & B includes C => A>C
+    ifL(
+        andL(after("x"), existsL(transitive("t", path=("x", transitive))), includes(path=("t", tran_quest2))),
+        after(path=("t", tran_quest3)),
+    )
+
+    # A is_included B & B<C => A<C
+    ifL(
+        andL(is_included("x"), existsL(transitive("t", path=("x", transitive))), before(path=("t", tran_quest2))),
+        before(path=("t", tran_quest3)),
+    )
+
+    # A is_included B & B>C => A>C
+    ifL(
+        andL(is_included("x"), existsL(transitive("t", path=("x", transitive))), after(path=("t", tran_quest2))),
+        after(path=("t", tran_quest3)),
+    )
+
+if __name__ == "__main__":
+    graph.visualize("graph-temporal")
