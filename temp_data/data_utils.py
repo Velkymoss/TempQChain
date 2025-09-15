@@ -82,6 +82,8 @@ def get_temporal_question(relation):
         template = Template("Is $event1 temporally included in $event2?")
     elif relation.lower() == "simultaneous":
         template = Template("Did $event1 happen simultaneously with $event2?")
+    else:
+        template = Template("Is the temporal relation between $event1 and $event2 vague?")
 
     return template
 
@@ -91,8 +93,8 @@ def create_yn(event_pair, relation, relation_set):
     answers = []
 
     for r in relation_set:
-        if r.lower() != "vague":
-            template = get_temporal_question(r)
+
+        template = get_temporal_question(r)
 
         q_texts.append(template.substitute(event1=event_pair[0], event2=event_pair[1]))
 
@@ -304,7 +306,102 @@ def create_chain(doc_pair_relations, trans_triples, inverse):
     #     doc_chained_pairs.append(len(chain))
 
 
-def build_data(ids, story_triplets, questions, objects_info):
+def create_facts_info(doc_questions, inverse_rules, transitive_rules):
+    doc_facts_info = []
+    for doc_q in doc_questions:
+        facts_info = {}
+        for question in doc_q:
+            key = question["query"][0] + ":" + question["query"][1]
+            # One reasoning step using the inverse rules
+            if len(question["question_info"]["chain"]) == 1:
+                level = 1
+                previous = [[question["question_info"]["chain"][0][0][0], question["question_info"]["chain"][0][0][1],
+                             question["question_info"]["chain"][0][1]["relation_type"]]]
+                path = previous[0][0] + " " + previous[0][2] + " " + previous[0][1] + " @@symmetric," + previous[0][
+                    2] + " -> " + previous[0][1] + " " + inverse_rules[previous[0][2]] + " " + previous[0][0]
+                rule = "symmetric," + previous[0][2]
+            # One reasoning step using transitivity
+            elif question["question_info"]["reasoning_steps"] == 1 and len(question["question_info"]["chain"]) == 2:
+                level = 1
+                previous = [[question["question_info"]["chain"][0][0][0], question["question_info"]["chain"][0][0][1],
+                             question["question_info"]["chain"][0][1]["relation_type"]],
+                            [question["question_info"]["chain"][1][0][0], question["question_info"]["chain"][1][0][1],
+                             question["question_info"]["chain"][1][1]["relation_type"]]]
+                path = previous[0][0] + " " + previous[0][2] + " " + previous[0][1] + " " + previous[1][0] + " " + \
+                       previous[1][2] + " " + previous[1][1] + " @@transitive," + previous[0][2] + "," + previous[1][
+                           2] + " -> " + previous[0][0] + " " + " ".join(
+                    transitive_rules[(previous[0][2], previous[1][2])]) + " " + previous[1][1]
+                rule = "transitive," + previous[0][2] + "," + previous[1][2]
+            # Three reasoning steps: Inverse, inverse and transitivity
+            elif question["question_info"]["reasoning_steps"] == 3 and len(question["question_info"]["chain"]) == 2:
+                level = 3
+                previous = [[question["question_info"]["goal_chain"][0][0],
+                             question["question_info"]["goal_chain"][0][1],
+                             question["question_info"]["goal_chain"][0][2]["relation_type"]],
+                            [question["question_info"]["goal_chain"][1][0],
+                             question["question_info"]["goal_chain"][1][1],
+                             question["question_info"]["goal_chain"][1][2]["relation_type"]]]
+                path = question["question_info"]["chain"][0][0][0] + " " + \
+                           question["question_info"]["chain"][0][1]["relation_type"] + " " + \
+                           question["question_info"]["chain"][0][0][1] + " @@symmetric," + \
+                           question["question_info"]["chain"][0][1]["relation_type"] + " -> " + \
+                           previous[0][0] + " " + previous[0][2] + " " + previous[0][1] + " " + \
+                           question["question_info"]["chain"][1][0][0] + " " + \
+                           question["question_info"]["chain"][1][1]["relation_type"] + " " + \
+                           question["question_info"]["chain"][1][0][1] + " @@symmetric," + \
+                           question["question_info"]["chain"][1][1]["relation_type"] + " -> " + \
+                           previous[1][0] + " " + previous[1][2] + " " + previous[1][1] + \
+                           " @@transitive," + previous[0][2] + "," + previous[1][2] + " -> " + \
+                           previous[0][0] + " " + " ".join(transitive_rules[(previous[0][2], previous[1][2])]) + " " + \
+                           previous[1][1]
+                rule = "transitive," + previous[0][2] + "," + previous[1][2]
+                # print(question)
+            # Two reasoning steps: one inverse and then transitivity
+            elif question["question_info"]["reasoning_steps"] == 2 and len(question["question_info"]["chain"]) == 2:
+                level = 2
+                # The first of the two initial facts needs to be inversed
+                if question["question_info"]["goal_chain"][0][0] == question["query"][0]:
+                    previous = [
+                        [question["question_info"]["goal_chain"][0][0], question["question_info"]["goal_chain"][0][1],
+                         question["question_info"]["goal_chain"][0][2]["relation_type"]],
+                        [question["question_info"]["chain"][1][0][0], question["question_info"]["chain"][1][0][1],
+                         question["question_info"]["chain"][1][1]["relation_type"]]]
+                    path = question["question_info"]["chain"][0][0][0] + " " + \
+                           question["question_info"]["chain"][0][1]["relation_type"] + " " + \
+                           question["question_info"]["chain"][0][0][1] + " @@symmetric," + \
+                           question["question_info"]["chain"][0][1]["relation_type"] + " -> " + \
+                           previous[0][0] + " " + previous[0][2] + " " + previous[0][1] + " " + previous[1][0] + " " + \
+                           previous[1][2] + " " + previous[1][1] + " @@transitive," + previous[0][2] + "," + \
+                           previous[1][2] + " -> " + previous[0][0] + " " + \
+                           " ".join(transitive_rules[(previous[0][2], previous[1][2])]) + " " + previous[1][1]
+                # The second of the two initial facts needs to be inversed
+                else:
+                    previous = [
+                        [question["question_info"]["chain"][0][0][0], question["question_info"]["chain"][0][0][1],
+                         question["question_info"]["chain"][0][1]["relation_type"]],
+                        [question["question_info"]["goal_chain"][0][0], question["question_info"]["goal_chain"][0][1],
+                         question["question_info"]["goal_chain"][0][2]["relation_type"]]]
+                    path = question["question_info"]["chain"][1][0][0] + " " + \
+                           question["question_info"]["chain"][1][1]["relation_type"] + " " + \
+                           question["question_info"]["chain"][1][0][1] + " @@symmetric," + \
+                           question["question_info"]["chain"][1][1]["relation_type"] + " -> " + \
+                           previous[1][0] + " " + previous[1][2] + " " + previous[1][1] + " " + previous[0][0] + " " + \
+                           previous[0][2] + " " + previous[0][1] + " @@transitive," + previous[0][2] + "," + \
+                           previous[1][2] + " -> " + previous[0][0] + " " + \
+                           " ".join(transitive_rules[(previous[0][2], previous[1][2])]) + " " + previous[1][1]
+
+                rule = "transitive," + previous[0][2] + "," + previous[1][2]
+
+            facts_info[key] = {
+                question["question_info"]["target_relation"][0]: {"level": level, "previous": previous, "path": path,
+                                                                  "rule": rule}}
+
+        doc_facts_info.append(facts_info)
+
+    return doc_facts_info
+
+
+def build_data(ids, story_triplets, questions, objects_info, facts_info):
     data = []
     for i in range(len(ids)):
         entry = {
@@ -314,6 +411,7 @@ def build_data(ids, story_triplets, questions, objects_info):
             "story_triplets": story_triplets[i],
             "questions": questions[i],
             "objects_info": objects_info[i],
+            "facts_info": facts_info[i]
         }
         data.append(entry)
     return data
