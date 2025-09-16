@@ -52,7 +52,7 @@ with Graph("temporal_QA_rule") as graph:
     tran_quest1, tran_quest2, tran_quest3 = transitive.has_a(arg11=question, arg22=question, arg33=question)
 
     # if A & B have relation x, B & C have relation x, then A & C have relation x
-    transitive_1 = [before, after, includes, is_included]
+    transitive_1 = [before, after, includes, is_included, simultaneous]
     for rel in transitive_1:
         ifL(
             andL(rel("x"), existsL(transitive("t", path=("x", transitive))), rel(path=("t", tran_quest2))),
