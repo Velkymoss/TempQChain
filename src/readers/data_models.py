@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import BaseModel
 
@@ -32,7 +32,7 @@ class SPARTUNStory(BaseModel):
     # Mandatory
     story: list[str] # str for tb
     questions: list[SPARTUNQuestion]
-    objects_info: dict[str, dict]
+    objects_info: Optional[dict[str, dict]] = None # not needed for tb-dense
     facts_info: dict[str, dict] # question_info for tb?
 
     # Optional
