@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import BaseModel
 
@@ -8,7 +8,7 @@ class SPARTUNQuestion(BaseModel):
     q_type: str
     candidate_answers: list[str]
     question_info: dict[str, Any]
-    answer: list[str]
+    answer: list[str] # string for tb
     query: list[str]  # query is a list of object strings
 
     @property
@@ -30,10 +30,10 @@ class SPARTUNQuestion(BaseModel):
 
 class SPARTUNStory(BaseModel):
     # Mandatory
-    story: list[str]
+    story: list[str] # str for tb
     questions: list[SPARTUNQuestion]
-    objects_info: dict[str, dict]
-    facts_info: dict[str, dict]
+    objects_info: Optional[dict[str, dict]] = None # not needed for tb-dense
+    facts_info: dict[str, dict] # question_info for tb?
 
     # Optional
     # identifier: Optional[str] = None

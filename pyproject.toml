@@ -3,7 +3,7 @@ name = "spartunqchain"
 version = "0.1.0"
 description = "fork of original repo, same package version"
 authors = [{ name = "Max Moser", email = "maxmoser.15@gmail.com" }]
-requires-python = ">=3.12,<4.0"
+requires-python = "==3.12,<4.0"
 readme = "README.md"
 dependencies = [
     "domiknows==0.533",
@@ -19,6 +19,9 @@ dependencies = [
     "python-dotenv>=1.1.0,<2.0.0",
     "pytest==8.3.5",
     "pytest-cov>=5.0.0,<6",
+    "beautifulsoup4>=4.13.4",
+    "lxml>=6.0.0",
+    "ipykernel>=6.30.0",
 ]
 
 [tool.pytest.ini_options]

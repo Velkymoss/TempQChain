@@ -11,22 +11,22 @@ install:
 	uv sync
 
 baseline-yn:
-	uv run python src/main.py $(PY_ARGS) --train_file ORIGIN --test_file ORIGIN --model $(MODEL)
+	uv run python src/main.py $(PY_ARGS) --data_path $(DATA_PATH) --results_path $(RES_PATH) --use_chains $(CHAINS) --train_file ORIGIN --test_file ORIGIN --model $(MODEL)
 
 primal-dual-yn:
-	uv run python src/main.py $(PY_ARGS) --train_file ORIGIN --test_file ORIGIN --pmd T --constraints T --model $(MODEL)
+	uv run python src/main.py $(PY_ARGS) --data_path $(DATA_PATH) --results_path $(RES_PATH) --use_chains $(CHAINS) --train_file ORIGIN --test_file ORIGIN --pmd T --constraints T --model $(MODEL)
 
 primal-dual-qchain-yn:
-	uv run python src/main.py $(PY_ARGS) --train_file SPARTUN --test_file SPARTUN --pmd T --constraints T --save T --save_file Q_chain_T5 --model $(MODEL)
+	uv run python src/main.py $(PY_ARGS) --data_path $(DATA_PATH) --results_path $(RES_PATH) --use_chains $(CHAINS) --train_file SPARTUN --test_file SPARTUN --pmd T --constraints T --save T --save_file Q_chain_T5 --model $(MODEL)
 
 baseline-fr:
-	uv run python src/main_rel.py $(PY_ARGS) --train_file ORIGIN --test_file ORIGIN --model $(MODEL)
+	uv run python src/main_rel.py $(PY_ARGS) --data_path $(DATA_PATH) --results_path $(RES_PATH) --use_chains $(CHAINS) --train_file ORIGIN --test_file ORIGIN --model $(MODEL)
 
 primal-dual-fr:
-	uv run python src/main_rel.py $(PY_ARGS) --train_file ORIGIN --test_file ORIGIN --pmd T --constraints T --model $(MODEL)
+	uv run python src/main_rel.py $(PY_ARGS) --data_path $(DATA_PATH) --results_path $(RES_PATH) --use_chains $(CHAINS) --train_file ORIGIN --test_file ORIGIN --pmd T --constraints T --model $(MODEL)
 
 primal-dual-qchain-fr:
-	uv run python src/main_rel.py $(PY_ARGS) --train_file SPARTUN --test_file SPARTUN --pmd T --constraints T --save T --save_file Q_chain_T5 --model $(MODEL)
+	uv run python src/main_rel.py $(PY_ARGS) --data_path $(DATA_PATH) --results_path $(RES_PATH) --use_chains $(CHAINS) --train_file SPARTUN --test_file SPARTUN --pmd T --constraints T --save T --save_file Q_chain_T5 --model $(MODEL)
 
 tests:
 	uv run pytest tests --cov=src --cov-report=term-missing

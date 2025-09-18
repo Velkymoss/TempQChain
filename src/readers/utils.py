@@ -2,7 +2,7 @@ from types import MappingProxyType
 
 VOCABULARY = MappingProxyType(
     {
-        "LEFT": ["to the left of"],
+        "BEFORE": ["before"],
         "RIGHT": ["to the right of"],
         "ABOVE": ["above"],
         "BELOW": ["below"],
@@ -19,24 +19,15 @@ VOCABULARY = MappingProxyType(
         "NTPPI": ["contain[s]"],
     }
 )
-
+# TODO: Find the integers for the temporal labels
 LABELS_INT = MappingProxyType(
     {
-        "LEFT": 1,
-        "RIGHT": 2,
-        "ABOVE": 4,
-        "BELOW": 8,
-        "BEHIND": 16,
-        "FRONT": 32,
-        "NEAR": 64,
-        "FAR": 128,
-        "DC": 256,
-        "EC": 512,
-        "PO": 1024,
-        "TPP": 2048,
-        "NTPP": 4096,
-        "TPPI": 8192,
-        "NTPPI": 16384,
+        "BEFORE": 1,
+        "AFTER": 2,
+        "INCLUDES": 4,
+        "IS INCLUDED": 8,
+        "SIMULTANEOUS": 16,
+        "VAGUE": 32
     }
 )
 

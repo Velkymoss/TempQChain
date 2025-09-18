@@ -11,11 +11,12 @@ logger = get_logger(__name__)
 
 
 class TrainReader:
-    def __init__(self, data: list[dict], question_type: str, limit_questions: int, upward_level: int):
+    def __init__(self, data: list[dict], question_type: str, limit_questions: int, upward_level: int, simple: bool = False):
         self.data = data
         self.question_type = question_type
         self.limit_questions = limit_questions
         self.upward_level = upward_level
+        self.simple = simple
 
         self.dataset = []
         self.count_questions = 0
@@ -86,13 +87,14 @@ class TrainReader:
 
         self.added_questions.append((question.question, label, current_key))
 
-        if self.question_type == "YN":
-            # If the answer of question is no, adding another question asking the same thing but "Yes" input
-            if label.lower() == "no":
-                yes_question = self._create_yes_question_for_no(target_question, current_key, story)
-                self.added_questions.append(yes_question)
+        if self.simple:
+            if self.question_type == "YN":
+                # If the answer of question is no, adding another question asking the same thing but "Yes" input
+                if label.lower() == "no":
+                    yes_question = self._create_yes_question_for_no(target_question, current_key, story)
+                    self.added_questions.append(yes_question)
 
-                self.reasoning_steps_from_target -= 1
+                    self.reasoning_steps_from_target -= 1
 
         self._process_reasoning_steps(target_question, story)
 
@@ -165,22 +167,23 @@ class TrainReader:
 
         self.previous_ids.append(str(self.question_id[previous_key]))
 
-        if self.question_type == "YN":
-            self.added_questions.append(
-                (
-                    self._create_simple_question(*previous_fact, story.objects_info),
-                    "Yes",
-                    previous_key,
+        if self.simple:
+            if self.question_type == "YN":
+                self.added_questions.append(
+                    (
+                        self._create_simple_question(*previous_fact, story.objects_info),
+                        "Yes",
+                        previous_key,
+                    )
                 )
-            )
-        else:
-            self.added_questions.append(
-                (
-                    self._create_simple_question(*previous_fact, story.objects_info),
-                    label_fr_to_int(list(story.facts_info[fact_info_prev_key].keys())),
-                    previous_key,
+            else:
+                self.added_questions.append(
+                    (
+                        self._create_simple_question(*previous_fact, story.objects_info),
+                        label_fr_to_int(list(story.facts_info[fact_info_prev_key].keys())),
+                        previous_key,
+                    )
                 )
-            )
 
     def _create_yes_question_for_no(
         self, target_question: tuple[str, str, str], current_key: str, story: SPARTUNStory
@@ -242,6 +245,7 @@ class TrainReader:
             return f"{obj1}:{obj2}"
 
     def _create_simple_question(self, obj1: str, obj2: str, relation: str, obj_info: dict) -> str:
+        # TODO: Not use this method
         """
         Generates a simple question string based on two objects, their relation, and the desired question type.
 

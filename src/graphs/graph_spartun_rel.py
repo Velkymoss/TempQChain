@@ -13,6 +13,7 @@ with Graph("spatial_QA_rule") as graph:
     question = Concept(name="question")
     (story_contain,) = story.contains(question)
 
+    # labels
     left = question(name="left")
     right = question(name="right")
     above = question(name="above")
@@ -31,6 +32,7 @@ with Graph("spatial_QA_rule") as graph:
     output_for_loss = question(name="output_for_loss")
 
     # Only one label of opposite concepts
+    # exactL is a quantifier and means "exactly one of each" in this context
     exactL(left, right)
     exactL(above, below)
     exactL(behind, front)
@@ -39,14 +41,15 @@ with Graph("spatial_QA_rule") as graph:
 
     # Inverse Constrains
     inverse = Concept(name="inverse")
+    # has_a connects a compositional concept to its components (also referred to as arguments)
     inv_question1, inv_question2 = inverse.has_a(arg1=question, arg2=question)
 
     # First inverse relation, allow inverse back and forth
     inverse_list1 = [(above, below), (left, right), (front, behind), (coveredby, cover), (inside, contain)]
 
     for ans1, ans2 in inverse_list1:
+        # if question x has label ans1 ∧ ∃ an inverse relationship s connected to x → the iverse question should have label ans2
         ifL(andL(ans1("x"), existsL(inverse("s", path=("x", inverse)))), ans2(path=("s", inv_question2)))
-
         ifL(andL(ans2("x"), existsL(inverse("s", path=("x", inverse)))), ans1(path=("s", inv_question2)))
 
     # 2 PMD : = entropy + beta * constraint_loss ( Train with no-constraint first then working on)
@@ -59,13 +62,14 @@ with Graph("spatial_QA_rule") as graph:
     transitive = Concept(name="transitive")
     tran_quest1, tran_quest2, tran_quest3 = transitive.has_a(arg11=question, arg22=question, arg33=question)
 
+    # if A & B have relation x, B & C have relation x, then A & C have relation x
     transitive_1 = [left, right, above, below, behind, front, inside, contain]
-
     for rel in transitive_1:
         ifL(
             andL(rel("x"), existsL(transitive("t", path=("x", transitive))), rel(path=("t", tran_quest2))),
             rel(path=("t", tran_quest3)),
         )
+
     # Transitive of cover and contain
     transitive_2 = [(coveredby, inside), (cover, contain)]
     for rel1, rel2 in transitive_2:
