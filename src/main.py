@@ -212,6 +212,7 @@ def train(program, train_set, eval_set, cur_device, limit, lr, program_name="Dom
 
 
 def main(args):
+    print("Use chains is", args.use_chains)
     SEED = 382
     np.random.seed(SEED)
     random.seed(SEED)
@@ -227,9 +228,10 @@ def main(args):
             cur_device = "mps"
         else:
             cur_device = "cpu"
+
     boolQ = args.train_file.upper() == "BOOLQ"
     train_file = (
-        "train.json"
+        "tb_dense.json"
         if args.train_file.upper() == "TEMP"
         else "train.json"
         if args.train_file.upper() == "ORIGIN"
@@ -265,7 +267,7 @@ def main(args):
     )
 
     test_file = (
-        "train.json"
+        "tb_dense.json"
         if args.train_file.upper() == "TEMP"
         else "human_test.json"
         if args.test_file.upper() == "HUMAN"
@@ -295,7 +297,7 @@ def main(args):
     )
 
     eval_file = (
-        "train.json"
+        "dev.json"
         if args.train_file.upper() == "TEMP"
         else "human_dev.json"
         if args.test_file.upper() == "HUMAN"
@@ -386,9 +388,9 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", dest="batch_size", type=int, default=100000)
     parser.add_argument("--data_path", type=str, default="../data/", help="Path to the data folder")
     parser.add_argument("--results_path", type=str, default="../models/", help="Path to the folder to save models and predictions")
-    parser.add_argument("--use_chains", type=bool, default=True)
-    parser.add_argument("--train_file", type=str, default="TEMP", help="Option: Temp, SpaRTUN or Human")
-    parser.add_argument("--test_file", type=str, default="TEMP", help="Option: Temp, SpaRTUN or Human")
+    parser.add_argument("--use_chains", type=bool, default=False)
+    parser.add_argument("--train_file", type=str, default="TEMP", help="Option: Temp, Origin, SpaRTUN or Human")
+    parser.add_argument("--test_file", type=str, default="TEMP", help="Option: Temp, Origin, SpaRTUN or Human")
     parser.add_argument("--text_rules", type=bool, default=False, help="Including rules as text or not")
     parser.add_argument("--dropout", dest="dropout", type=bool, default=False)
     parser.add_argument("--pmd", dest="pmd", type=bool, default=False)
