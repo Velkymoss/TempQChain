@@ -638,3 +638,25 @@ def get_clean_article(article_soup: BeautifulSoup) -> str:
         cleaned_sentences.append(sentence)
         sentence_tokens = []
     return " ".join(cleaned_sentences)
+
+
+def fill_template(relations, type):
+    rule = ""
+    if type == "symmetry":
+        template = Template("If XXX is $relation YYY then YYY is $inverse_relation XXX.")
+        rule = template.substitute(relation=relations[0], inverse_relation=relations[1])
+    elif type == "transitivity":
+        template = Template("If XXX is $relation1 YYY and YYY is $relation2 ZZZ then XXX is $trans_relation ZZZ")
+        rule = template.substitute(relation1=relations[0], relation2=relations[1], trans_relation=relations[2])
+
+    return rule
+
+
+def save_rules(rules, type):
+    for r in rules:
+        if type == "symmetry":
+            print(fill_template([r, rules[r]], type))
+        if type == "transitivity":
+            print(fill_template([r[0], r[1], rules[r]], type))
+
+
