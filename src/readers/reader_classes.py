@@ -11,7 +11,9 @@ logger = get_logger(__name__)
 
 
 class TrainReader:
-    def __init__(self, data: list[dict], question_type: str, limit_questions: int, upward_level: int, simple: bool = False):
+    def __init__(
+        self, data: list[dict], question_type: str, limit_questions: int, upward_level: int, simple: bool = False
+    ):
         self.data = data
         self.question_type = question_type
         self.limit_questions = limit_questions
@@ -96,7 +98,7 @@ class TrainReader:
 
                     self.reasoning_steps_from_target -= 1
 
-        self._process_reasoning_steps(target_question, story)
+        self._process_reasoning_steps(target_question, story, question)
 
     def _build_batch_question(self, story: SPARTUNStory, question: SPARTUNQuestion) -> list[tuple]:
         batch_question = []
@@ -119,6 +121,7 @@ class TrainReader:
         self,
         target_question: tuple[str, str, str],
         story: SPARTUNStory,
+        question: SPARTUNQuestion,
     ) -> None:
         current_level = [target_question]
         for step in range(self.reasoning_steps_from_target):
@@ -136,7 +139,7 @@ class TrainReader:
                     next_level.append(previous_fact)
                     current_level = next_level
 
-                relation_type = self._get_relation_type()
+                relation_type = self._get_relation_type(question, story)
                 self.relation_info[current_key] = relation_type
 
     def _process_current_fact(
@@ -206,13 +209,15 @@ class TrainReader:
 
         return yes_question
 
-    def _get_relation_type(self) -> str:
+    def _get_relation_type(self, question: SPARTUNQuestion, story: SPARTUNStory) -> str:
         size_relation = len(self.previous_ids)
 
         if size_relation == 0:
             return ""
-
-        relation_type = "symmetric" if size_relation == 1 else "transitive" if size_relation == 2 else "transitive_topo"
+        
+        event_1 = question.query[0]
+        event_2 = question.query[1]
+        relation_type = story.facts_info[f"{event_1}:{event_2}"][question.answer[0]]["rule"].split(",")[0]
         return relation_type + "," + ",".join(self.previous_ids)
 
     def _get_label(self, question: SPARTUNQuestion) -> str:

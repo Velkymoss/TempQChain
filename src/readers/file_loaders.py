@@ -270,7 +270,7 @@ def DomiKnowS_reader(
 
 if __name__ == "__main__":
     dataset = DomiKnowS_reader(
-        "data/" + "train_FR_v3.json",
+        "data/" + "tb_dense.json",
         "FR",
         size=10,
         upward_level=3,
