@@ -17,7 +17,7 @@ class SPARTUNQuestion(BaseModel):
         rel = self.question_info.get("target_relation")
         if isinstance(rel, list):
             rel = rel[0]
-        return rel.upper() if rel else None
+        return rel if rel else None
 
     @property
     def asked_relation(self) -> str:
@@ -25,7 +25,7 @@ class SPARTUNQuestion(BaseModel):
         rel = self.question_info.get("asked_relation")
         if isinstance(rel, list):
             rel = rel[0]
-        return rel.upper() if rel else None
+        return rel if rel else None
 
 
 class SPARTUNStory(BaseModel):
