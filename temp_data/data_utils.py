@@ -99,9 +99,9 @@ def create_yn(event_pair, relation, relation_set):
         q_texts.append(template.substitute(event1=event_pair[0], event2=event_pair[1]))
 
         if r.lower() == relation.lower():
-            answers.append("Yes")
+            answers.append(["Yes"])
         else:
-            answers.append("No")
+            answers.append(["No"])
 
     return q_texts, answers
 
@@ -549,7 +549,7 @@ def build_data(ids, story_triplets, questions, objects_info, facts_info):
         entry = {
             "identifier": ids[i],
             "seed_id": i,
-            "story": "",
+            "story": [""],
             "story_triplets": story_triplets[i],
             "questions": questions[i],
             "objects_info": objects_info[i],

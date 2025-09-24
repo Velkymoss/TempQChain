@@ -374,8 +374,6 @@ def main(args):
         else "human_train.json"
     )
 
-
-
     training_set = DomiKnowS_reader(
         os.path.join(args.data_path, train_file),
         "FR",
