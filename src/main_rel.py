@@ -1,5 +1,5 @@
-import os
 import argparse
+import os
 import random
 
 import numpy as np
@@ -20,91 +20,40 @@ from programs.program_declaration_SPARTUN_FR import (
     program_declaration_spartun_fr_T5_v4,
     program_declaration_spartun_fr_T5_v5,
 )
+from programs import program_tb_dense
 from readers.file_loaders import DomiKnowS_reader
 
 logger = get_logger(__name__)
 
 
 def eval(program, testing_set, cur_device, args, print_result=False, StepGame_number=None, multilabel=False):
-    if args.test_file.upper() != "STEPGAME":
-        from graphs.graph_spartun_rel import (
-            above,
-            behind,
-            below,
-            contain,
-            cover,
-            coveredby,
-            disconnected,
-            far,
-            front,
-            inside,
-            left,
-            near,
-            overlap,
-            right,
-            touch,
-        )
-        
-        all_labels = [
-            left,
-            right,
-            above,
-            below,
-            behind,
-            front,
-            near,
-            far,
-            disconnected,
-            touch,
-            overlap,
-            coveredby,
-            inside,
-            cover,
-            contain,
-        ]
+    from graphs.graph_tb_dense import (
+        after,
+        before,
+        includes,
+        is_included,
+        simultaneous,
+        vague,
+    )
 
-        all_labels_text = [
-            "left",
-            "right",
-            "above",
-            "below",
-            "behind",
-            "front",
-            "near",
-            "far",
-            "disconnect",
-            "touch",
-            "overlap",
-            "covered by",
-            "inside",
-            "cover",
-            "contain",
-        ]
-    else:
-        from graphs.graph_stepgame import (
-            above,
-            below,
-            left,
-            lower_left,
-            lower_right,
-            overlap,
-            right,
-            upper_left,
-            upper_right,
-        )
+    all_labels = [
+        before,
+        after,
+        includes,
+        is_included,
+        simultaneous,
+        vague,
+    ]
 
-        all_labels = [left, right, above, below, lower_left, lower_right, upper_left, upper_right, overlap]
-        all_labels_text = [
-            "left",
-            "right",
-            "above",
-            "below",
-            "lower-left",
-            "lower-right",
-            "upper-left",
-            "upper-right",
-            "overlap",
-        ]
+    all_labels_text = [
+        "before",
+        "after",
+        "includes",
+        "is_included",
+        "simultaneous",
+        "vague",
+    ]
+    
 
     def remove_opposite(ind1, ind2, result_set, result_list):
         if ind1 in pred_set and ind2 in pred_set:
@@ -359,20 +308,7 @@ def main(args):
                 model=args.model,
             )
 
-    # boolQ = args.train_file.upper() == "BOOLQ"
-    train_file = (
-        "tb_dense.json"
-        if args.train_file.upper() == "TEMP"
-        else "train.json"
-        if args.train_file.upper() == "ORIGIN"
-        else "train_FR_v3.json"
-        if args.train_file.upper() == "SPARTUN"
-        else "boolQ/train.json"
-        if args.train_file.upper() == "BOOLQ"
-        else "StepGame"
-        if args.train_file.upper() == "STEPGAME"
-        else "human_train.json"
-    )
+    train_file = "tb_dense.json"
 
     training_set = DomiKnowS_reader(
         os.path.join(args.data_path, train_file),
@@ -386,15 +322,7 @@ def main(args):
         STEPGAME_status="train" if args.train_file.upper() == "STEPGAME" else None,
     )
 
-    test_file = (
-        "test.json"
-        if args.train_file.upper() == "TEMP"
-        else "human_test.json"
-        if args.test_file.upper() == "HUMAN"
-        else "StepGame"
-        if args.train_file.upper() == "STEPGAME"
-        else "test.json"
-    )
+    test_file = "test.json"
 
     testing_set = DomiKnowS_reader(
         os.path.join(args.data_path, test_file),
@@ -407,17 +335,7 @@ def main(args):
         STEPGAME_status="test" if args.train_file.upper() == "STEPGAME" else None,
     )
 
-    eval_file = (
-        "dev.json"
-        if args.train_file.upper() == "TEMP"
-        else "human_dev.json"
-        if args.test_file.upper() == "HUMAN"
-        else "StepGame"
-        if args.train_file.upper() == "STEPGAME"
-        else "boolQ/train.json"
-        if args.train_file.upper() == "BOOLQ"
-        else "dev_Spartun.json"
-    )
+    eval_file = "dev.json"
 
     eval_set = DomiKnowS_reader(
         os.path.join(args.data_path, eval_file),
@@ -526,8 +444,9 @@ if __name__ == "__main__":
     parser.add_argument("--train_size", dest="train_size", type=int, default=16)
     parser.add_argument("--batch_size", dest="batch_size", type=int, default=4)
     parser.add_argument("--data_path", type=str, default="../data/", help="Path to the data folder")
-    parser.add_argument("--results_path", type=str, default="../models/",
-                        help="Path to the folder to save models and predictions")
+    parser.add_argument(
+        "--results_path", type=str, default="../models/", help="Path to the folder to save models and predictions"
+    )
     parser.add_argument("--use_chains", type=bool, default=False)
     parser.add_argument("--train_file", type=str, default="TEMP", help="Option: Temp, Origin, SpaRTUN or Human")
     parser.add_argument("--test_file", type=str, default="TEMP", help="Option: Temp, Origin, SpaRTUN or Human")

@@ -1,11 +1,17 @@
 import torch
-from domiknows.program import Program
 from domiknows.sensor.pytorch.learners import ModuleLearner
 from domiknows.sensor.pytorch.relation_sensors import CompositionCandidateSensor
 from domiknows.sensor.pytorch.sensors import FunctionalSensor, JointSensor, ReaderSensor
 
-from programs.models import *
-from programs.utils import *
+from programs.models import (
+    BERTTokenizer,
+    ClassifyLabelT5,
+    ClassifyLayer,
+    MultipleClassFRT5,
+    MultipleClassYN_Hidden,
+    T5Tokenizer,
+)
+from programs.utils import check_symmetric, check_transitive
 
 
 def program_declaration_spartun_fr(
@@ -19,40 +25,26 @@ def program_declaration_spartun_fr(
     constraints: bool = False,
     spartun: bool = True,
     model: str = "bert",
-) -> Program:
+):
     program = None
-    from graphs.graph_spartun_rel import (
-        above,
-        behind,
-        below,
-        contain,
-        cover,
-        coveredby,
-        disconnected,
-        far,
-        front,
+    from graphs.graph_tb_dense import (
+        after,
+        before,
         graph,
-        inside,
+        includes,
         inv_question1,
         inv_question2,
         inverse,
-        left,
-        near,
-        overlap,
+        is_included,
         question,
-        right,
+        simultaneous,
         story,
         story_contain,
-        touch,
         tran_quest1,
         tran_quest2,
         tran_quest3,
-        tran_topo,
-        tran_topo_quest1,
-        tran_topo_quest2,
-        tran_topo_quest3,
-        tran_topo_quest4,
         transitive,
+        vague,
     )
 
     story["questions"] = ReaderSensor(keyword="questions")
@@ -61,21 +53,12 @@ def program_declaration_spartun_fr(
     story["question_ids"] = ReaderSensor(keyword="question_ids")
     story["labels"] = ReaderSensor(keyword="labels")
     all_labels = [
-        "left",
-        "right",
-        "above",
-        "below",
-        "behind",
-        "front",
-        "near",
-        "far",
-        "dc",
-        "ec",
-        "po",
-        "tpp",
-        "ntpp",
-        "tppi",
-        "ntppi",
+        "after",
+        "before",
+        "includes",
+        "is_included",
+        "simultaneous",
+        "vague",
     ]
 
     def to_int_list(x):
@@ -98,21 +81,12 @@ def program_declaration_spartun_fr(
         all_labels = make_labels(labels)
         ids = to_int_list(q_ids.split("@@"))
         (
-            left_list,
-            right_list,
-            above_list,
-            below_list,
-            behind_list,
-            front_list,
-            near_list,
-            far_list,
-            dc_list,
-            ec_list,
-            po_list,
-            tpp_list,
-            ntpp_list,
-            tppi_list,
-            ntppi_list,
+            after_list,
+            before_list,
+            includes_list,
+            is_included_list,
+            simultaneous_list,
+            vague_list,
         ) = all_labels
         return (
             torch.ones(len(questions.split("@@")), 1),
@@ -120,21 +94,12 @@ def program_declaration_spartun_fr(
             stories.split("@@"),
             relations.split("@@"),
             ids,
-            left_list,
-            right_list,
-            above_list,
-            below_list,
-            behind_list,
-            front_list,
-            near_list,
-            far_list,
-            dc_list,
-            ec_list,
-            po_list,
-            tpp_list,
-            ntpp_list,
-            tppi_list,
-            ntppi_list,
+            after_list,
+            before_list,
+            includes_list,
+            is_included_list,
+            simultaneous_list,
+            vague_list,
         )
 
     question[
@@ -143,21 +108,12 @@ def program_declaration_spartun_fr(
         "story",
         "relation",
         "id",
-        "left_label",
-        "right_label",
-        "above_label",
-        "below_label",
-        "behind_label",
-        "front_label",
-        "near_label",
-        "far_label",
-        "dc_label",
-        "ec_label",
-        "po_label",
-        "tpp_label",
-        "ntpp_label",
-        "tppi_label",
-        "ntppi_label",
+        "after_label",
+        "before_label",
+        "includes_label",
+        "is_included_label",
+        "simultaneous_label",
+        "vague_label",
     ] = JointSensor(
         story["questions"],
         story["stories"],
@@ -180,115 +136,52 @@ def program_declaration_spartun_fr(
         )
 
         all_answers = [
-            left,
-            right,
-            above,
-            below,
-            behind,
-            front,
-            near,
-            far,
-            disconnected,
-            touch,
-            overlap,
-            coveredby,
-            inside,
-            cover,
-            contain,
+            after,
+            before,
+            includes,
+            is_included,
+            simultaneous,
+            vague,
         ]
         expected_label = [
-            "left",
-            "right",
-            "above",
-            "below",
-            "behind",
-            "front",
-            "near",
-            "far",
-            "disconnected",
-            "touch",
-            "overlap",
-            "covered by",
-            "inside",
-            "cover",
-            "contain",
+            "after",
+            "before",
+            "includes",
+            "is_included",
+            "simultaneous",
+            "vague",
         ]
 
         clf1 = MultipleClassFRT5(t5_model_id, expected_label, device=device, adapter=True)
         question["hidden_layer"] = ModuleLearner("input_ids", module=clf1, device=device)
-        question[left] = ModuleLearner(
+        question[after] = ModuleLearner(
             "hidden_layer",
             module=ClassifyLabelT5(expected_label[0], map_index=clf1.map_label, device=device),
             device=device,
         )
-        question[right] = ModuleLearner(
+        question[before] = ModuleLearner(
             "hidden_layer",
             module=ClassifyLabelT5(expected_label[1], map_index=clf1.map_label, device=device),
             device=device,
         )
-        question[above] = ModuleLearner(
+        question[includes] = ModuleLearner(
             "hidden_layer",
             module=ClassifyLabelT5(expected_label[2], map_index=clf1.map_label, device=device),
             device=device,
         )
-        question[below] = ModuleLearner(
+        question[is_included] = ModuleLearner(
             "hidden_layer",
             module=ClassifyLabelT5(expected_label[3], map_index=clf1.map_label, device=device),
             device=device,
         )
-        question[behind] = ModuleLearner(
+        question[simultaneous] = ModuleLearner(
             "hidden_layer",
             module=ClassifyLabelT5(expected_label[4], map_index=clf1.map_label, device=device),
             device=device,
         )
-        question[front] = ModuleLearner(
+        question[vague] = ModuleLearner(
             "hidden_layer",
             module=ClassifyLabelT5(expected_label[5], map_index=clf1.map_label, device=device),
-            device=device,
-        )
-        question[near] = ModuleLearner(
-            "hidden_layer",
-            module=ClassifyLabelT5(expected_label[6], map_index=clf1.map_label, device=device),
-            device=device,
-        )
-        question[far] = ModuleLearner(
-            "hidden_layer",
-            module=ClassifyLabelT5(expected_label[7], map_index=clf1.map_label, device=device),
-            device=device,
-        )
-        question[disconnected] = ModuleLearner(
-            "hidden_layer",
-            module=ClassifyLabelT5(expected_label[8], map_index=clf1.map_label, device=device),
-            device=device,
-        )
-        question[touch] = ModuleLearner(
-            "hidden_layer",
-            module=ClassifyLabelT5(expected_label[9], map_index=clf1.map_label, device=device),
-            device=device,
-        )
-        question[overlap] = ModuleLearner(
-            "hidden_layer",
-            module=ClassifyLabelT5(expected_label[10], map_index=clf1.map_label, device=device),
-            device=device,
-        )
-        question[coveredby] = ModuleLearner(
-            "hidden_layer",
-            module=ClassifyLabelT5(expected_label[11], map_index=clf1.map_label, device=device),
-            device=device,
-        )
-        question[inside] = ModuleLearner(
-            "hidden_layer",
-            module=ClassifyLabelT5(expected_label[12], map_index=clf1.map_label, device=device),
-            device=device,
-        )
-        question[cover] = ModuleLearner(
-            "hidden_layer",
-            module=ClassifyLabelT5(expected_label[13], map_index=clf1.map_label, device=device),
-            device=device,
-        )
-        question[contain] = ModuleLearner(
-            "hidden_layer",
-            module=ClassifyLabelT5(expected_label[14], map_index=clf1.map_label, device=device),
             device=device,
         )
     else:
@@ -296,103 +189,55 @@ def program_declaration_spartun_fr(
         question["input_ids"] = JointSensor(story_contain, "question", "story", forward=BERTTokenizer(), device=device)
         clf1 = MultipleClassYN_Hidden.from_pretrained("bert-base-uncased", device=device, drp=dropout)
         question["hidden_layer"] = ModuleLearner("input_ids", module=clf1, device=device)
-        all_answers = [
-            left,
-            right,
-            above,
-            below,
-            behind,
-            front,
-            near,
-            far,
-            disconnected,
-            touch,
-            overlap,
-            coveredby,
-            inside,
-            cover,
-            contain,
-        ]
-        question[left] = ModuleLearner(
+        # all_answers = [
+        #     after,
+        #     before,
+        #     includes,
+        #     is_included,
+        #     simultaneous,
+        #     vague,
+        # ]
+        question[after] = ModuleLearner(
             "hidden_layer", module=ClassifyLayer(clf1.hidden_size, device=device, drp=dropout), device=device
         )
-        question[right] = ModuleLearner(
+        question[before] = ModuleLearner(
             "hidden_layer", module=ClassifyLayer(clf1.hidden_size, device=device, drp=dropout), device=device
         )
-        question[above] = ModuleLearner(
+        question[includes] = ModuleLearner(
             "hidden_layer", module=ClassifyLayer(clf1.hidden_size, device=device, drp=dropout), device=device
         )
-        question[below] = ModuleLearner(
+        question[is_included] = ModuleLearner(
             "hidden_layer", module=ClassifyLayer(clf1.hidden_size, device=device, drp=dropout), device=device
         )
-        question[behind] = ModuleLearner(
+        question[simultaneous] = ModuleLearner(
             "hidden_layer", module=ClassifyLayer(clf1.hidden_size, device=device, drp=dropout), device=device
         )
-        question[front] = ModuleLearner(
-            "hidden_layer", module=ClassifyLayer(clf1.hidden_size, device=device, drp=dropout), device=device
-        )
-        question[near] = ModuleLearner(
-            "hidden_layer", module=ClassifyLayer(clf1.hidden_size, device=device, drp=dropout), device=device
-        )
-        question[far] = ModuleLearner(
-            "hidden_layer", module=ClassifyLayer(clf1.hidden_size, device=device, drp=dropout), device=device
-        )
-        question[disconnected] = ModuleLearner(
-            "hidden_layer", module=ClassifyLayer(clf1.hidden_size, device=device, drp=dropout), device=device
-        )
-        question[touch] = ModuleLearner(
-            "hidden_layer", module=ClassifyLayer(clf1.hidden_size, device=device, drp=dropout), device=device
-        )
-        question[overlap] = ModuleLearner(
-            "hidden_layer", module=ClassifyLayer(clf1.hidden_size, device=device, drp=dropout), device=device
-        )
-        question[coveredby] = ModuleLearner(
-            "hidden_layer", module=ClassifyLayer(clf1.hidden_size, device=device, drp=dropout), device=device
-        )
-        question[inside] = ModuleLearner(
-            "hidden_layer", module=ClassifyLayer(clf1.hidden_size, device=device, drp=dropout), device=device
-        )
-        question[cover] = ModuleLearner(
-            "hidden_layer", module=ClassifyLayer(clf1.hidden_size, device=device, drp=dropout), device=device
-        )
-        question[contain] = ModuleLearner(
+        question[vague] = ModuleLearner(
             "hidden_layer", module=ClassifyLayer(clf1.hidden_size, device=device, drp=dropout), device=device
         )
 
     # Reading label
-    question[left] = FunctionalSensor(story_contain, "left_label", forward=read_label, label=True, device=device)
-    question[right] = FunctionalSensor(story_contain, "right_label", forward=read_label, label=True, device=device)
-    question[above] = FunctionalSensor(story_contain, "above_label", forward=read_label, label=True, device=device)
-    question[below] = FunctionalSensor(story_contain, "below_label", forward=read_label, label=True, device=device)
-    question[behind] = FunctionalSensor(story_contain, "behind_label", forward=read_label, label=True, device=device)
-    question[front] = FunctionalSensor(story_contain, "front_label", forward=read_label, label=True, device=device)
-    question[near] = FunctionalSensor(story_contain, "near_label", forward=read_label, label=True, device=device)
-    question[far] = FunctionalSensor(story_contain, "far_label", forward=read_label, label=True, device=device)
-    question[disconnected] = FunctionalSensor(story_contain, "dc_label", forward=read_label, label=True, device=device)
-    question[touch] = FunctionalSensor(story_contain, "ec_label", forward=read_label, label=True, device=device)
-    question[overlap] = FunctionalSensor(story_contain, "po_label", forward=read_label, label=True, device=device)
-    question[coveredby] = FunctionalSensor(story_contain, "tpp_label", forward=read_label, label=True, device=device)
-    question[inside] = FunctionalSensor(story_contain, "ntpp_label", forward=read_label, label=True, device=device)
-    question[cover] = FunctionalSensor(story_contain, "tppi_label", forward=read_label, label=True, device=device)
-    question[contain] = FunctionalSensor(story_contain, "ntppi_label", forward=read_label, label=True, device=device)
+    question[after] = FunctionalSensor(story_contain, "after_label", forward=read_label, label=True, device=device)
+    question[before] = FunctionalSensor(story_contain, "before_label", forward=read_label, label=True, device=device)
+    question[includes] = FunctionalSensor(
+        story_contain, "includes_label", forward=read_label, label=True, device=device
+    )
+    question[is_included] = FunctionalSensor(
+        story_contain, "is_included_label", forward=read_label, label=True, device=device
+    )
+    question[simultaneous] = FunctionalSensor(
+        story_contain, "simultaneous_label", forward=read_label, label=True, device=device
+    )
+    question[vague] = FunctionalSensor(story_contain, "vague_label", forward=read_label, label=True, device=device)
 
     poi_list = [
         question,
-        left,
-        right,
-        above,
-        below,
-        behind,
-        front,
-        near,
-        far,
-        disconnected,
-        touch,
-        overlap,
-        coveredby,
-        inside,
-        cover,
-        contain,
+        after,
+        before,
+        includes,
+        is_included,
+        simultaneous,
+        vague,
     ]
 
     if constraints:
@@ -407,19 +252,7 @@ def program_declaration_spartun_fr(
             device=device,
         )
 
-        tran_topo[
-            tran_topo_quest1.reversed, tran_topo_quest2.reversed, tran_topo_quest3.reversed, tran_topo_quest4.reversed
-        ] = CompositionCandidateSensor(
-            relations=(
-                tran_topo_quest1.reversed,
-                tran_topo_quest2.reversed,
-                tran_topo_quest3.reversed,
-                tran_topo_quest4.reversed,
-            ),
-            forward=check_transitive_topo,
-            device=device,
-        )
-        poi_list.extend([inverse, transitive, tran_topo])
+        poi_list.extend([inverse, transitive])
 
     from domiknows.program import SolverPOIProgram
     from domiknows.program.loss import NBCrossEntropyLoss
