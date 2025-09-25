@@ -14,7 +14,7 @@ from programs.models import (
 from programs.utils import check_symmetric, check_transitive
 
 
-def program_declaration_spartun_fr(
+def program_declaration_tb_dense_fr(
     device: torch.device,
     *,
     pmd: bool = False,
