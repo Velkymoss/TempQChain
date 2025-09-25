@@ -162,16 +162,8 @@ make tests
 
 ## TODOs
 
-### Max:
-- add the t0 tag match to the data
-- insert the event tag into the story
-- add full table of all rules used to the readme
-### Vasiliki:
-- create_rules_txt
-- debug chain run for temporal data
-- think about non-determinism -> document it on the repo
-### Think about:
-- Huggingface or domiknows?
-- if domiknows: how do we handle non-deterministic rules? How do we know/test that the graph works then?
-- think about why vague samples should be added for transitivity? -> if we gold label all non-deterministic transitivites as vague, does this ensure non-determinism in the graph? -> should we use that?
-- OR: measure for A - C in the transivity the gold label, so we can measure despite a non-deterministic rule if the model guesses the right relationship? - how to make the connection to the less?
+- On dev-max branch we already have programs for tb_dense available for YN and FR.
+There still need to be implemented programs for the various T5 versions
+- Creation of dev and test set for tb-dense
+- Because of our non-deterministic transitive rules our YN graph might work differently. 
+We need to verify if our current tb-dense YN graph is valid because of this.
