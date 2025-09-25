@@ -1,5 +1,5 @@
-import os
 import argparse
+import os
 import random
 
 import numpy as np
@@ -9,14 +9,14 @@ from domiknows.program.model.base import Mode
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, precision_score, recall_score
 
 from logger import get_logger
-from programs.program_declaration import program_declaration
+from programs.Program_tb_dense_YN import program_declaration
 from readers.file_loaders import DomiKnowS_reader
 
 logger = get_logger(__name__)
 
 
 def eval(program, testing_set, cur_device, args):
-    from graphs.graph import answer_class
+    from graphs.graph_tb_dense_YN import answer_class
 
     labels = ["Yes", "No"]
     accuracy_ILP = 0
@@ -74,7 +74,7 @@ def eval(program, testing_set, cur_device, args):
 
 
 def train(program, train_set, eval_set, cur_device, limit, lr, program_name="DomiKnow", args=None):
-    from graphs.graph import answer_class
+    from graphs.graph_tb_dense_YN import answer_class
 
     def evaluate():
         labels = ["Yes", "No"]
@@ -229,29 +229,12 @@ def main(args):
         else:
             cur_device = "cpu"
 
-    boolQ = args.train_file.upper() == "BOOLQ"
-    train_file = (
-        "tb_dense.json"
-        if args.train_file.upper() == "TEMP"
-        else "train.json"
-        if args.train_file.upper() == "ORIGIN"
-        else "new_human_train.json"
-        if args.train_file.upper() == "NEW"
-        else "train_YN_v3.json"
-        if args.train_file.upper() == "SPARTUN"
-        else "boolQ/train.json"
-        if args.train_file.upper() == "BOOLQ"
-        else "ReSQ/train_resq.json"
-        if args.train_file.upper() == "RESQ"
-        else "StepGame"
-        if args.train_file.upper() == "STEPGAME"
-        else ["human_train.json", "new_human_train.json"]
-        if args.train_file.upper() == "ALL_HUMAN"
-        else "human_train.json"
-    )
+    train_file = "tb_dense.json"
 
     file_path = (
-        os.path.join(args.data_path, train_file) if isinstance(train_file, str) else [os.path.join(args.data_path, file_name) for file_name in train_file]
+        os.path.join(args.data_path, train_file)
+        if isinstance(train_file, str)
+        else [os.path.join(args.data_path, file_name) for file_name in train_file]
     )
 
     training_set = DomiKnowS_reader(
@@ -266,24 +249,12 @@ def main(args):
         reasoning_steps=None if args.reasoning_steps == -1 else args.reasoning_steps,
     )
 
-    test_file = (
-        "tb_dense.json"
-        if args.train_file.upper() == "TEMP"
-        else "human_test.json"
-        if args.test_file.upper() == "HUMAN"
-        else "new_human_test.json"
-        if args.train_file.upper() == "NEW"
-        else "ReSQ/test_resq.json"
-        if args.test_file.upper() == "RESQ"
-        else "StepGame"
-        if args.train_file.upper() == "STEPGAME"
-        else ["human_test.json", "new_human_test.json"]
-        if args.train_file.upper() == "ALL_HUMAN"
-        else "test.json"
-    )
+    test_file = "test.json"
 
     file_path = (
-        os.path.join(args.data_path, test_file) if isinstance(test_file, str) else [os.path.join(args.data_path, file_name) for file_name in test_file]
+        os.path.join(args.data_path, test_file)
+        if isinstance(test_file, str)
+        else [os.path.join(args.data_path, file_name) for file_name in test_file]
     )
     testing_set = DomiKnowS_reader(
         file_path,
@@ -296,26 +267,12 @@ def main(args):
         reasoning_steps=None if args.reasoning_steps == -1 else args.reasoning_steps,
     )
 
-    eval_file = (
-        "dev.json"
-        if args.train_file.upper() == "TEMP"
-        else "human_dev.json"
-        if args.test_file.upper() == "HUMAN"
-        else "new_human_dev.json"
-        if args.train_file.upper() == "NEW"
-        else "boolQ/train.json"
-        if args.train_file.upper() == "BOOLQ"
-        else "ReSQ/dev_resq.json"
-        if args.test_file.upper() == "RESQ"
-        else "StepGame"
-        if args.train_file.upper() == "STEPGAME"
-        else ["human_dev.json", "new_human_dev.json"]
-        if args.train_file.upper() == "ALL_HUMAN"
-        else "dev_Spartun.json"
-    )
+    eval_file = "dev.json"
 
     file_path = (
-        os.path.join(args.data_path, eval_file) if isinstance(eval_file, str) else [os.path.join(args.data_path, file_name) for file_name in eval_file]
+        os.path.join(args.data_path, eval_file)
+        if isinstance(eval_file, str)
+        else [os.path.join(args.data_path, file_name) for file_name in eval_file]
     )
     eval_set = DomiKnowS_reader(
         file_path,
@@ -387,7 +344,9 @@ if __name__ == "__main__":
     parser.add_argument("--train_size", dest="train_size", type=int, default=100000)
     parser.add_argument("--batch_size", dest="batch_size", type=int, default=100000)
     parser.add_argument("--data_path", type=str, default="../data/", help="Path to the data folder")
-    parser.add_argument("--results_path", type=str, default="../models/", help="Path to the folder to save models and predictions")
+    parser.add_argument(
+        "--results_path", type=str, default="../models/", help="Path to the folder to save models and predictions"
+    )
     parser.add_argument("--use_chains", type=bool, default=False)
     parser.add_argument("--train_file", type=str, default="TEMP", help="Option: Temp, Origin, SpaRTUN or Human")
     parser.add_argument("--test_file", type=str, default="TEMP", help="Option: Temp, Origin, SpaRTUN or Human")
