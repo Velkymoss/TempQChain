@@ -1,7 +1,7 @@
 from domiknows.graph import Concept, Graph, Relation
 from domiknows.graph.logicalConstrain import andL, exactL, existsL, ifL, orL
 
-CONSTRAIN_ACTIVE = True
+CONSTRAIN_ACTIVE = False
 
 Graph.clear()
 Concept.clear()
@@ -62,34 +62,26 @@ with Graph("temporal_QA_rule") as graph:
 
     # #######################rule 2 #####################################################
     # A rel B & B=C -> A rel C
-    for rel in [before, after, includes, is_included, vague]:
+    for rel in [before, after, includes, is_included]:
         ifL(
             andL(rel("x"), existsL(transitive("t", path=("x", transitive))), simultaneous(path=("t", tran_quest2))),
             rel(path=("t", tran_quest3)),
         )
 
-    # A vague B & B [before, after, includes, is_included, simultaneous] C -> A vague C
-    # Is this rule needed?
-    for rel in [before, after, includes, is_included, simultaneous]:
-        ifL(
-            andL(vague("x"), existsL(transitive("t", path=("x", transitive))), rel(path=("t", tran_quest2))),
-            vague(path=("t", tran_quest3)),
-        )
-
     ############################ before ##################################################
-    # Do we need this rule?
-    # A<B & B > C => A any C
-    ifL(
-        andL(before("x"), existsL(transitive("t", path=("x", transitive))), after(path=("t", tran_quest2))),
-        orL(
-            before(path=("t", tran_quest3)),
-            after(path=("t", tran_quest3)),
-            includes(path=("t", tran_quest3)),
-            is_included(path=("t", tran_quest3)),
-            simultaneous(path=("t", tran_quest3)),
-            vague(path=("t", tran_quest3)),
-        ),
-    )
+    if CONSTRAIN_ACTIVE:
+        # A<B & B > C => A any C
+        ifL(
+            andL(before("x"), existsL(transitive("t", path=("x", transitive))), after(path=("t", tran_quest2))),
+            orL(
+                before(path=("t", tran_quest3)),
+                after(path=("t", tran_quest3)),
+                includes(path=("t", tran_quest3)),
+                is_included(path=("t", tran_quest3)),
+                simultaneous(path=("t", tran_quest3)),
+                vague(path=("t", tran_quest3)),
+            ),
+        )
 
     # A<B & B includes C => [A<C, A includes C, A vague C]
     ifL(
@@ -111,18 +103,6 @@ with Graph("temporal_QA_rule") as graph:
         ),
     )
 
-    # A<B & B vague C -> [before, includes, is_included, vague]
-    # Keep as is or set conclusion only to vague?
-    ifL(
-        andL(before("x"), existsL(transitive("t", path=("x", transitive))), vague(path=("t", tran_quest2))),
-        orL(
-            before(path=("t", tran_quest3)),
-            includes(path=("t", tran_quest3)),
-            is_included(path=("t", tran_quest3)),
-            vague(path=("t", tran_quest3)),
-        ),
-    )
-
     ########################### after ####################################################
     # A>B & B includes C => [after, includes, vague]
     ifL(
@@ -134,35 +114,25 @@ with Graph("temporal_QA_rule") as graph:
         ),
     )
 
-    # A>B & B<C -> A any C
-    ifL(
-        andL(after("x"), existsL(transitive("t", path=("x", transitive))), before(path=("t", tran_quest2))),
-        orL(
-            before(path=("t", tran_quest3)),
-            after(path=("t", tran_quest3)),
-            includes(path=("t", tran_quest3)),
-            is_included(path=("t", tran_quest3)),
-            simultaneous(path=("t", tran_quest3)),
-            vague(path=("t", tran_quest3)),
-        ),
-    )
+    if CONSTRAIN_ACTIVE:
+        # A>B & B<C -> A any C
+        ifL(
+            andL(after("x"), existsL(transitive("t", path=("x", transitive))), before(path=("t", tran_quest2))),
+            orL(
+                before(path=("t", tran_quest3)),
+                after(path=("t", tran_quest3)),
+                includes(path=("t", tran_quest3)),
+                is_included(path=("t", tran_quest3)),
+                simultaneous(path=("t", tran_quest3)),
+                vague(path=("t", tran_quest3)),
+            ),
+        )
 
     # A>B & B is_included C -> [after, is_included, vague]
     ifL(
         andL(after("x"), existsL(transitive("t", path=("x", transitive))), before(path=("t", tran_quest2))),
         orL(
             after(path=("t", tran_quest3)),
-            is_included(path=("t", tran_quest3)),
-            vague(path=("t", tran_quest3)),
-        ),
-    )
-
-    # A>B & B vague C -> [after, includes, is_included, vague]
-    ifL(
-        andL(after("x"), existsL(transitive("t", path=("x", transitive))), vague(path=("t", tran_quest2))),
-        orL(
-            after(path=("t", tran_quest3)),
-            includes(path=("t", tran_quest3)),
             is_included(path=("t", tran_quest3)),
             vague(path=("t", tran_quest3)),
         ),
@@ -189,29 +159,19 @@ with Graph("temporal_QA_rule") as graph:
         ),
     )
 
-    # A is_included B & B includes C => A any C
-    ifL(
-        andL(is_included("x"), existsL(transitive("t", path=("x", transitive))), includes(path=("t", tran_quest2))),
-        orL(
-            before(path=("t", tran_quest3)),
-            after(path=("t", tran_quest3)),
-            includes(path=("t", tran_quest3)),
-            is_included(path=("t", tran_quest3)),
-            simultaneous(path=("t", tran_quest3)),
-            vague(path=("t", tran_quest3)),
-        ),
-    )
-
-    # A is_included B & B vague C => [before, after, is_included, vague]
-    ifL(
-        andL(is_included("x"), existsL(transitive("t", path=("x", transitive))), vague(path=("t", tran_quest2))),
-        orL(
-            before(path=("t", tran_quest3)),
-            after(path=("t", tran_quest3)),
-            is_included(path=("t", tran_quest3)),
-            vague(path=("t", tran_quest3)),
-        ),
-    )
+    if CONSTRAIN_ACTIVE:
+        # A is_included B & B includes C => A any C
+        ifL(
+            andL(is_included("x"), existsL(transitive("t", path=("x", transitive))), includes(path=("t", tran_quest2))),
+            orL(
+                before(path=("t", tran_quest3)),
+                after(path=("t", tran_quest3)),
+                includes(path=("t", tran_quest3)),
+                is_included(path=("t", tran_quest3)),
+                simultaneous(path=("t", tran_quest3)),
+                vague(path=("t", tran_quest3)),
+            ),
+        )
 
     ############################ includes ###########################################################
     # A includes B & B < C -> [before, includes, vague]
@@ -245,20 +205,9 @@ with Graph("temporal_QA_rule") as graph:
         ),
     )
 
-    # A includes B & B vague C -> [before, after, is_included, vague]
-    ifL(
-        andL(includes("x"), existsL(transitive("t", path=("x", transitive))), vague(path=("t", tran_quest2))),
-        orL(
-            before(path=("t", tran_quest3)),
-            after(path=("t", tran_quest3)),
-            is_included(path=("t", tran_quest3)),
-            vague(path=("t", tran_quest3)),
-        ),
-    )
-
     #######################simultaneous#####################################
     # A = B & B rel C -> A rel C
-    for rel in [before, after, includes, is_included, vague]:
+    for rel in [before, after, includes, is_included]:
         ifL(
             andL(simultaneous("x"), existsL(transitive("t", path=("x", transitive))), rel(path=("t", tran_quest2))),
             rel(path=("t", tran_quest3)),
