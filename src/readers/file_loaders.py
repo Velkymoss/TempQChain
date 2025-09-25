@@ -88,95 +88,6 @@ def general_reader(file, question_type, size=None):
     return dataset
 
 
-def RESQ_reader(file, question_type, size=None, reasoning=None):
-    with open(file) as json_file:
-        data = json.load(json_file)
-    size = 300000 if not size else size
-
-    dataset = []
-    count = 0
-    for story in data["data"]:
-        story_txt = " ".join(story["story"])
-        run_id = 0
-        for question in story["questions"]:
-            if count >= size:
-                break
-            if reasoning is not None:
-                if reasoning == 0 and isinstance(question["step_of_reasoning"], int):
-                    continue
-                if reasoning != 0 and question["step_of_reasoning"] != reasoning:
-                    continue
-            question_txt = question["question"]
-            candidates = question["candidate_answers"]
-            label = question["answer"][0] if question["answer"][0] != "DK" else "NO"
-            dataset.append([[question_txt, story_txt, "YN", candidates, "", label, run_id]])
-            run_id += 1
-            count += 1
-
-    return dataset
-
-
-def boolQ_reader(file, size=None):
-    with open(file) as json_file:
-        data = json.load(json_file)
-    size = 300000 if not size else size
-
-    dataset = []
-    for story in data["data"][:size]:
-        story_txt = story["passage"][:1000]
-        run_id = 0
-        question_txt = story["question"]
-        candidates = ["Yes", "No"]
-        label = story["answer"]
-        dataset.append([[question_txt, story_txt, "YN", candidates, "", label, run_id]])
-        run_id += 1
-    return dataset
-
-
-def StepGame_reader(prefix, train_dev_test="train", size=None, file_number=None):
-    if train_dev_test == "train":
-        files = ["train.json"]
-    elif train_dev_test == "dev":
-        if file_number is None:
-            files = ["qa" + str(i + 1) + "_valid.json" for i in range(5)]
-        else:
-            files = ["qa" + str(file_number + 1) + "_valid.json"]
-    else:
-        if file_number is None:
-            files = ["qa" + str(i + 1) + "_test.json" for i in range(10)]
-        else:
-            files = ["qa" + str(file_number + 1) + "_test.json"]
-
-    dataset = []
-    logger.info(f"{prefix} {files}")
-    for file in files:
-        with open(prefix + "/" + file) as json_file:
-            data = json.load(json_file)
-        size = 300000 if not size else size
-        run_id = 0
-        for story_ind in list(data)[:size]:
-            story = data[story_ind]
-            story_txt = " ".join(story["story"])
-
-            question_txt = story["question"]
-            candidates = [
-                "left",
-                "right",
-                "above",
-                "below",
-                "lower-left",
-                "lower-right",
-                "upper-left",
-                "upper-right",
-                "overlap",
-            ]
-            label = story["label"]
-            dataset.append([[question_txt, story_txt, "FR", candidates, "", label, run_id]])
-            run_id += 1
-
-    return dataset
-
-
 def DomiKnowS_reader(
     file,
     question_type,
@@ -191,18 +102,7 @@ def DomiKnowS_reader(
     STEPGAME_status="train",
 ):
     logger.info(f"{type_dataset} {reasoning_steps}")
-    if type_dataset == "STEPGAME":
-        dataset = StepGame_reader(file, STEPGAME_status, size, file_number=reasoning_steps)
-    elif type_dataset == "BOOLQ":
-        dataset = boolQ_reader(file, size)
-    elif type_dataset == "RESQ":
-        dataset = RESQ_reader(file, size, reasoning=reasoning_steps)
-    elif type_dataset == "ALL_HUMAN":
-        dataset_old = general_reader(file[0], question_type, size)
-        dataset_new = general_reader(file[1], question_type, size - len(dataset_old))
-        dataset = dataset_old + dataset_new
-        file = "all_human" + file[0][file[0].rfind("_") :]
-    elif augmented:  # Refer to SPARTUN with chain of reasoning when training
+    if augmented:  # Refer to SPARTUN with chain of reasoning when training
         dataset = train_reader(file, question_type, limit_questions=size, upward_level=upward_level)
     else:
         dataset = general_reader(file, question_type, size)
