@@ -27,7 +27,7 @@ logger = get_logger(__name__)
 
 
 def eval(program, testing_set, cur_device, args, print_result=False, StepGame_number=None, multilabel=False):
-    from graphs.graph_tb_dense import (
+    from graphs.graph_tb_dense_FR import (
         after,
         before,
         includes,

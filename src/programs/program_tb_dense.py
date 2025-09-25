@@ -27,7 +27,7 @@ def program_declaration_spartun_fr(
     model: str = "bert",
 ):
     program = None
-    from graphs.graph_tb_dense import (
+    from graphs.graph_tb_dense_FR import (
         after,
         before,
         graph,
