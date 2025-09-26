@@ -80,11 +80,3 @@ make primal-dual-qchain-fr
 ```bash
 make tests
 ```
-
-## TODOs
-
-- On dev-max branch we already have programs for tb_dense available for YN and FR.
-There still need to be implemented programs for the various T5 versions
-- Creation of dev and test set for tb-dense
-- Because of our non-deterministic transitive rules our YN graph might work differently. 
-We need to verify if our current tb-dense YN graph is valid because of this.
