@@ -22,6 +22,7 @@ dependencies = [
     "beautifulsoup4>=4.13.4",
     "lxml>=6.0.0",
     "ipykernel>=6.30.0",
+    "typer>=0.9.4",
 ]
 
 [tool.pytest.ini_options]

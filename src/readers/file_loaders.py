@@ -99,7 +99,6 @@ def DomiKnowS_reader(
     batch_size=8,
     rule_text=False,
     reasoning_steps=None,
-    STEPGAME_status="train",
 ):
     logger.info(f"{type_dataset} {reasoning_steps}")
     if augmented:  # Refer to SPARTUN with chain of reasoning when training
@@ -123,7 +122,7 @@ def DomiKnowS_reader(
     }
     for batch in tqdm.tqdm(
         dataset,
-        desc="Reading " + file + " " + (str(STEPGAME_status) if STEPGAME_status is not None else ""),
+        desc="Reading " + file,
     ):
         count_question += len(batch)
         # Checking each batch have same story, prevent mixing IDs
@@ -177,7 +176,6 @@ if __name__ == "__main__":
         type_dataset=None,
         reasoning_steps=0,
         augmented=True,
-        STEPGAME_status=None,
         batch_size=8,
         rule_text=False,
     )

@@ -1,4 +1,3 @@
-import argparse
 import os
 import random
 
@@ -8,24 +7,18 @@ import tqdm
 import transformers
 
 from logger import get_logger
-from programs.program_declaration import (
-    program_declaration_StepGame,
-    program_declaration_StepGame_T5,
+from programs.program_tb_dense_FR import (
+    program_declaration_tb_dense_fr,
+    program_declaration_tb_dense_fr_T5,
+    program_declaration_tb_dense_fr_T5_v2,
+    program_declaration_tb_dense_fr_T5_v3,
 )
-from programs.program_declaration_SPARTUN_FR import (
-    program_declaration_spartun_fr_T5,
-    program_declaration_spartun_fr_T5_v2,
-    program_declaration_spartun_fr_T5_v3,
-    program_declaration_spartun_fr_T5_v4,
-    program_declaration_spartun_fr_T5_v5,
-)
-from programs.program_tb_dense_FR import program_declaration_tb_dense_fr
 from readers.file_loaders import DomiKnowS_reader
 
 logger = get_logger(__name__)
 
 
-def eval(program, testing_set, cur_device, args, print_result=False, StepGame_number=None, multilabel=False):
+def eval(program, testing_set, cur_device, args, print_result=False, multilabel=False):
     from graphs.graph_tb_dense_FR import (
         after,
         before,
@@ -75,15 +68,12 @@ def eval(program, testing_set, cur_device, args, print_result=False, StepGame_nu
                 if pred.argmax().item() == 1:
                     pred_set.add(ind)
                 pred_list.append(pred[1].item())
-            if args.train_file.upper() == "STEPGAME":
-                pred = np.array(pred_list).argmax()
-                pred_set = {pred}
-            else:
-                remove_opposite(0, 1, pred_set, pred_list)
-                remove_opposite(2, 3, pred_set, pred_list)
-                remove_opposite(4, 5, pred_set, pred_list)
-                remove_opposite(6, 7, pred_set, pred_list)
-                remove_opposite(8, 9, pred_set, pred_list)
+
+            remove_opposite(0, 1, pred_set, pred_list)
+            remove_opposite(2, 3, pred_set, pred_list)
+            remove_opposite(4, 5, pred_set, pred_list)
+            remove_opposite(6, 7, pred_set, pred_list)
+            remove_opposite(8, 9, pred_set, pred_list)
             accuracy_check = True
             # Getting acutal label
             # if args.model == "t5-adapter":
@@ -122,9 +112,6 @@ def eval(program, testing_set, cur_device, args, print_result=False, StepGame_nu
         else:
             print("Loaded Model Name:", args.loaded_file, file=result_file)
         print("Evaluation File:", args.test_file, file=result_file)
-        if StepGame_number:
-            print("Testing on StepGame {:} steps".format(StepGame_number), file=result_file)
-        print("Accuracy:", accuracy, file=result_file)
 
     return accuracy
 
@@ -248,66 +235,44 @@ def main(args):
     else:
         cur_device = "cuda:" + str(cuda_number) if torch.cuda.is_available() else "cpu"
 
-    if args.train_file.upper() == "STEPGAME":
-        if args.model == "t5-adapter":
-            print("call T5")
-            program = program_declaration_StepGame_T5(
-                cur_device,
-                pmd=args.pmd,
-                beta=args.beta,
-                sampling=args.sampling,
-                sampleSize=args.sampling_size,
-                dropout=args.dropout,
-                constraints=args.constraints,
-            )
+    if args.model == "t5-adapter":
+        print("call T5")
+        program_declaration_function = None
+        if args.version == 2:
+            program_declaration_function = program_declaration_tb_dense_fr_T5_v2
+        elif args.version == 3:
+            program_declaration_function = program_declaration_tb_dense_fr_T5_v3
+        elif args.version == 4:
+            # program_declaration_function = program_declaration_tb_dense_fr_T5_v4
+            raise NotImplementedError("Version 4 is not implemented yet.")
+        elif args.version == 5:
+            # program_declaration_function = program_declaration_tb_dense_fr_T5_v5
+            raise NotImplementedError("Version 5 is not implemented yet.")
         else:
-            program = program_declaration_StepGame(
-                cur_device,
-                pmd=args.pmd,
-                beta=args.beta,
-                sampling=args.sampling,
-                sampleSize=args.sampling_size,
-                dropout=args.dropout,
-                constraints=args.constraints,
-            )
+            program_declaration_function = program_declaration_tb_dense_fr_T5
+
+        program = program_declaration_function(
+            cur_device,
+            pmd=args.pmd,
+            beta=args.beta,
+            sampling=args.sampling,
+            sampleSize=args.sampling_size,
+            dropout=args.dropout,
+            constraints=args.constraints,
+        )
     else:
-        # TODO: create program declaration for tb_dense_fr T5
-        if args.model == "t5-adapter":
-            print("call T5")
-            program_declaration_function = None
-            if args.version == 2:
-                program_declaration_function = program_declaration_spartun_fr_T5_v2
-            elif args.version == 3:
-                program_declaration_function = program_declaration_spartun_fr_T5_v3
-            elif args.version == 4:
-                program_declaration_function = program_declaration_spartun_fr_T5_v4
-            elif args.version == 5:
-                program_declaration_function = program_declaration_spartun_fr_T5_v5
-            else:
-                program_declaration_function = program_declaration_spartun_fr_T5
+        program = program_declaration_tb_dense_fr(
+            cur_device,
+            pmd=args.pmd,
+            beta=args.beta,
+            sampling=args.sampling,
+            sampleSize=args.sampling_size,
+            dropout=args.dropout,
+            constraints=args.constraints,
+            model=args.model,
+        )
 
-            program = program_declaration_function(
-                cur_device,
-                pmd=args.pmd,
-                beta=args.beta,
-                sampling=args.sampling,
-                sampleSize=args.sampling_size,
-                dropout=args.dropout,
-                constraints=args.constraints,
-            )
-        else:
-            program = program_declaration_tb_dense_fr(
-                cur_device,
-                pmd=args.pmd,
-                beta=args.beta,
-                sampling=args.sampling,
-                sampleSize=args.sampling_size,
-                dropout=args.dropout,
-                constraints=args.constraints,
-                model=args.model,
-            )
-
-    train_file = "tb_dense.json"
+    train_file = "tb_dense_train.json"
 
     training_set = DomiKnowS_reader(
         os.path.join(args.data_path, train_file),
@@ -318,11 +283,9 @@ def main(args):
         augmented=args.use_chains,
         batch_size=args.batch_size,
         rule_text=args.text_rules,
-        STEPGAME_status="train" if args.train_file.upper() == "STEPGAME" else None,
     )
 
-    # TODO: create Testset for tb_dense
-    test_file = "test.json"
+    test_file = "tb_dense_test.json"
 
     testing_set = DomiKnowS_reader(
         os.path.join(args.data_path, test_file),
@@ -332,11 +295,9 @@ def main(args):
         augmented=False,
         batch_size=args.batch_size,
         rule_text=args.text_rules,
-        STEPGAME_status="test" if args.train_file.upper() == "STEPGAME" else None,
     )
 
-    # TODO: create Evalset for tb_dense
-    eval_file = "dev.json"
+    eval_file = "tb_dense_dev.json"
 
     eval_set = DomiKnowS_reader(
         os.path.join(args.data_path, eval_file),
@@ -346,7 +307,6 @@ def main(args):
         augmented=False,
         batch_size=args.batch_size,
         rule_text=args.text_rules,
-        STEPGAME_status="dev" if args.train_file.upper() == "STEPGAME" else None,
     )
 
     program_name = "PMD" if args.pmd else "Sampling" if args.sampling else "Base"
@@ -393,7 +353,6 @@ def main(args):
                     augmented=False,
                     batch_size=args.batch_size,
                     rule_text=args.text_rules,
-                    STEPGAME_status="test" if args.train_file.upper() == "STEPGAME" else None,
                     reasoning_steps=i,
                 )
                 eval(program, testing_set, cur_device, args, print_result=True)
@@ -434,41 +393,3 @@ def main(args):
         train(program, training_set, eval_set, cur_device, args.epoch, args.lr, program_name=program_name, args=args)
     else:
         train(program, training_set, eval_set, cur_device, args.epoch, args.lr, program_name=program_name, args=args)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run SpaRTUN Rules Base")
-    parser.add_argument("--epoch", dest="epoch", type=int, default=1)
-    parser.add_argument("--lr", dest="lr", type=float, default=1e-5)
-    parser.add_argument("--cuda", dest="cuda", type=int, default=0)
-    parser.add_argument("--test_size", dest="test_size", type=int, default=12)
-    parser.add_argument("--train_size", dest="train_size", type=int, default=16)
-    parser.add_argument("--batch_size", dest="batch_size", type=int, default=4)
-    parser.add_argument("--data_path", type=str, default="../data/", help="Path to the data folder")
-    parser.add_argument(
-        "--results_path", type=str, default="../models/", help="Path to the folder to save models and predictions"
-    )
-    parser.add_argument("--use_chains", type=bool, default=False)
-    parser.add_argument("--train_file", type=str, default="TEMP", help="Option: Temp, Origin, SpaRTUN or Human")
-    parser.add_argument("--test_file", type=str, default="TEMP", help="Option: Temp, Origin, SpaRTUN or Human")
-    parser.add_argument("--text_rules", type=bool, default=False, help="Including rules as text or not")
-    parser.add_argument("--dropout", dest="dropout", type=bool, default=False)
-    parser.add_argument("--pmd", dest="pmd", type=bool, default=False)
-    parser.add_argument("--beta", dest="beta", type=float, default=0.5)
-    parser.add_argument("--sampling", dest="sampling", type=bool, default=False)
-    parser.add_argument("--sampling_size", dest="sampling_size", type=int, default=1)
-    parser.add_argument("--constraints", dest="constraints", type=bool, default=False)
-    parser.add_argument("--loaded", dest="loaded", type=bool, default=False)
-    parser.add_argument("--loaded_file", dest="loaded_file", type=str, default="train_model")
-    parser.add_argument("--loaded_train", type=bool, default=False, help="Option to load and then further train")
-    parser.add_argument("--model_change", type=bool, default=False, help="Option to load and then further train")
-    parser.add_argument("--save", dest="save", type=bool, default=False)
-    parser.add_argument("--save_file", dest="save_file", type=str, default="train_model")
-    parser.add_argument("--step_game_test_each", dest="test_each", type=bool, default=False)
-    parser.add_argument("--model", dest="model", type=str, default="bert")
-    parser.add_argument("--check_epoch", dest="check_epoch", type=int, default=1)
-    parser.add_argument("--version", dest="version", type=int, default=0)
-    parser.add_argument("--optim", dest="optim", type=str, default="adamw")
-
-    args = parser.parse_args()
-    main(args)
