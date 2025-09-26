@@ -353,6 +353,13 @@ def create_facts_info(doc_questions, inverse_rules, transitive_rules):
                         question["question_info"]["chain"][1][1]["relation_type"],
                     ],
                 ]
+
+                # Check if the transitive rule exists
+                rule_key = (previous[0][2], previous[1][2])
+                if rule_key not in transitive_rules:
+                    # Skip this question if the rule doesn't exist
+                    continue
+
                 path = (
                     previous[0][0]
                     + " "
@@ -372,7 +379,7 @@ def create_facts_info(doc_questions, inverse_rules, transitive_rules):
                     + " -> "
                     + previous[0][0]
                     + " "
-                    + " ".join(transitive_rules[(previous[0][2], previous[1][2])])
+                    + " ".join(transitive_rules[rule_key])
                     + " "
                     + previous[1][1]
                 )
@@ -392,6 +399,13 @@ def create_facts_info(doc_questions, inverse_rules, transitive_rules):
                         question["question_info"]["goal_chain"][1][2]["relation_type"],
                     ],
                 ]
+
+                # Check if the transitive rule exists
+                rule_key = (previous[0][2], previous[1][2])
+                if rule_key not in transitive_rules:
+                    # Skip this question if the rule doesn't exist
+                    continue
+
                 path = (
                     question["question_info"]["chain"][0][0][0]
                     + " "
@@ -427,7 +441,7 @@ def create_facts_info(doc_questions, inverse_rules, transitive_rules):
                     + " -> "
                     + previous[0][0]
                     + " "
-                    + " ".join(transitive_rules[(previous[0][2], previous[1][2])])
+                    + " ".join(transitive_rules[rule_key])
                     + " "
                     + previous[1][1]
                 )
@@ -450,6 +464,13 @@ def create_facts_info(doc_questions, inverse_rules, transitive_rules):
                             question["question_info"]["chain"][1][1]["relation_type"],
                         ],
                     ]
+
+                    # Check if the transitive rule exists
+                    rule_key = (previous[0][2], previous[1][2])
+                    if rule_key not in transitive_rules:
+                        # Skip this question if the rule doesn't exist
+                        continue
+
                     path = (
                         question["question_info"]["chain"][0][0][0]
                         + " "
@@ -477,7 +498,7 @@ def create_facts_info(doc_questions, inverse_rules, transitive_rules):
                         + " -> "
                         + previous[0][0]
                         + " "
-                        + " ".join(transitive_rules[(previous[0][2], previous[1][2])])
+                        + " ".join(transitive_rules[rule_key])
                         + " "
                         + previous[1][1]
                     )
@@ -495,6 +516,13 @@ def create_facts_info(doc_questions, inverse_rules, transitive_rules):
                             question["question_info"]["goal_chain"][0][2]["relation_type"],
                         ],
                     ]
+
+                    # Check if the transitive rule exists
+                    rule_key = (previous[0][2], previous[1][2])
+                    if rule_key not in transitive_rules:
+                        # Skip this question if the rule doesn't exist
+                        continue
+
                     path = (
                         question["question_info"]["chain"][1][0][0]
                         + " "
@@ -522,7 +550,7 @@ def create_facts_info(doc_questions, inverse_rules, transitive_rules):
                         + " -> "
                         + previous[0][0]
                         + " "
-                        + " ".join(transitive_rules[(previous[0][2], previous[1][2])])
+                        + " ".join(transitive_rules[rule_key])
                         + " "
                         + previous[1][1]
                     )
@@ -658,5 +686,3 @@ def save_rules(rules, type):
             print(fill_template([r, rules[r]], type))
         if type == "transitivity":
             print(fill_template([r[0], r[1], rules[r]], type))
-
-
