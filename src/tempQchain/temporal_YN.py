@@ -211,7 +211,7 @@ def train(program, train_set, eval_set, cur_device, limit, lr, program_name="Dom
 
 
 def main(args):
-    print("Use chains is", args.use_chains)
+    logger.info("Use chains is %s", args.use_chains)
     SEED = 382
     np.random.seed(SEED)
     random.seed(SEED)
@@ -300,7 +300,7 @@ def main(args):
         os.makedirs(args.results_path)
 
     if args.loaded:
-        print(cur_device)
+        logger.info(cur_device)
         program.load(
             os.path.join(args.results_path + args.loaded_file),
             map_location={

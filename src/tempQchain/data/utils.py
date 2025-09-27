@@ -5,6 +5,10 @@ from string import Template
 
 from bs4 import BeautifulSoup
 
+from tempQchain.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 def read_txt(path_to_file):
     """
@@ -683,6 +687,6 @@ def fill_template(relations, type):
 def save_rules(rules, type):
     for r in rules:
         if type == "symmetry":
-            print(fill_template([r, rules[r]], type))
+            logger.info(fill_template([r, rules[r]], type))
         if type == "transitivity":
-            print(fill_template([r[0], r[1], rules[r]], type))
+            logger.info(fill_template([r[0], r[1], rules[r]], type))

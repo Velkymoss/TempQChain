@@ -150,7 +150,7 @@ def train(program, train_set, eval_set, cur_device, limit, lr, check_epoch=1, pr
     else:
         optimizer = lambda param: torch.optim.AdamW(param, lr=lr)
     for epoch in range(check_epoch, limit, check_epoch):
-        print("Training")
+        logger.info("Training")
         if args.pmd:
             program.train(train_set, c_warmup_iters=0, train_epoch_num=check_epoch, Optim=optimizer, device=cur_device)
         else:
@@ -236,7 +236,7 @@ def main(args):
         cur_device = "cuda:" + str(cuda_number) if torch.cuda.is_available() else "cpu"
 
     if args.model == "t5-adapter":
-        print("call T5")
+        logger.info("call T5")
         program_declaration_function = None
         if args.version == 2:
             program_declaration_function = program_declaration_tb_dense_fr_T5_v2
@@ -344,7 +344,7 @@ def main(args):
             )
         if args.test_each:
             for i in range(10):
-                print("Testing {:} steps".format(i))
+                logger.info("Testing {:} steps".format(i))
                 testing_set = DomiKnowS_reader(
                     os.path.join(args.results_path, test_file),
                     "FR",
