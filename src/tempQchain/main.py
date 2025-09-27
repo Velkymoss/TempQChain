@@ -4,6 +4,27 @@ app = typer.Typer(help="TempQChain CLI")
 
 
 @app.command()
+def create_tb_dense(
+    # Data processing parameters
+    save_rules: bool = typer.Option(False, help="Save transitivity rules to file"),
+):
+    """Process TB-Dense data and create training/dev/test splits."""
+    import tempQchain.data.create_tb_dense as create_tb_dense
+
+    typer.echo("Processing TB-Dense data...")
+
+    try:
+        create_tb_dense.process_tb_dense(
+            trans_rules=create_tb_dense.trans_rules,
+            save_rules_to_file=save_rules,
+        )
+        typer.echo("✅ Data processing completed successfully!")
+    except Exception as e:
+        typer.echo(f"❌ Error during data processing: {e}", err=True)
+        raise typer.Exit(1)
+
+
+@app.command()
 def temporal_fr(
     # Training parameters
     epoch: int = typer.Option(1, help="Number of training epochs"),

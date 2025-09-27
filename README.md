@@ -4,17 +4,17 @@
 
 Fork from https://github.com/HLR/SpaRTUNQChain
 
-Refactored code from paper https://arxiv.org/abs/2406.13828 published by Premsri and Kordjamshidi used for temporal events.
+Modified code from paper https://arxiv.org/abs/2406.13828 published by Premsri and Kordjamshidi used for temporal relationships between events.
 
 
 
-## Installation
+## Setup
 
 ### Prerequisites
 - Python 3.12 or higher
 - [uv](https://docs.astral.sh/uv/) package manager
 
-### Setup
+### Dependencies
 
 ```bash
 # Install uv if not already installed
@@ -25,6 +25,19 @@ cd SpaRTUNQChain
 
 uv sync
 ```
+
+### Data
+We are using a dense version of the [TimeBank corpus](https://aclanthology.org/P14-2082/). 
+
+Create a data folder in the root of the porject with following structure:
+- [TimebankDense.full.txt](https://www.usna.edu/Users/cs/nchamber/caevo/TimebankDense.full.txt)
+- timebank_1_2 (folder with annotated TB articles, not freely available unfornatunately)
+
+Then run the create-data script to create the train/dev/test-split for TB-dense:
+```bash
+q-chain create-data
+```
+
 
 ## CLI Usage
 
