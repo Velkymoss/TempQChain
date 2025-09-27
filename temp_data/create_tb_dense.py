@@ -22,7 +22,7 @@ from data_utils import (
     save_rules,
 )
 
-from logger import get_logger
+from src.tempQchain.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -113,8 +113,8 @@ def process_tb_dense(
     tb_dense_docs = list(tb_dense_df.doc_id.unique())
     logger.info(f"There are {len(tb_dense_docs)} documents with {len(tb_dense_df)} relations in total.")
 
-    dev_docs = [doc.replace('.tml', '') for doc in dev_docs]
-    test_docs = [doc.replace('.tml', '') for doc in test_docs]
+    dev_docs = [doc.replace(".tml", "") for doc in dev_docs]
+    test_docs = [doc.replace(".tml", "") for doc in test_docs]
     train_docs = [doc for doc in tb_dense_docs if doc not in dev_docs and doc not in test_docs]
 
     # Replace relation abbreviations with full names

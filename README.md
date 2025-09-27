@@ -4,81 +4,85 @@
 
 Fork from https://github.com/HLR/SpaRTUNQChain
 
-Refactored code from paper https://arxiv.org/abs/2406.13828 puplished by Premsri and Kordjamshidi used for temporal events.
+Refactored code from paper https://arxiv.org/abs/2406.13828 published by Premsri and Kordjamshidi used for temporal events.
 
 
 
-## Dependencies
+## Installation
 
+### Prerequisites
+- Python 3.12 or higher
+- [uv](https://docs.astral.sh/uv/) package manager
 
-
-```bash
-make install
-```
-
-# Experiment
-
-
-The program will save the parameters of the model in Models folder for any further use.
-
-For the data see data/README.md
-
-
-### Supported models:
-- `bert` (default)
-- `roberta`
-- `t5-adapter`
-
-### Example usage:
+### Setup
 
 ```bash
-make primal-dual-yn MODEL=roberta
+# Install uv if not already installed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+git clone https://github.com/Velkymoss/SpaRTUNQChain.git
+cd SpaRTUNQChain
+
+uv sync
 ```
 
-If `MODEL` is not specified, `bert` will be used by default.
+## CLI Usage
 
----
+The CLI supports FR mode for open-ended questions and YN mode for Yes-No questions about temporal relationships.
 
-## Yes-No Question Experiments
-
-### Baseline
+## FR Mode
 ```bash
-make baseline-yn MODEL=<model_name>
+q-chain temporal-fr [OPTIONS]
 ```
 
-### Primal-Dual
+### YN Mode
 ```bash
-make primal-dual-yn MODEL=<model_name>
+q-chain temporal-yn [OPTIONS]
 ```
 
-### Primal-Dual + Q-Chain
-```bash
-make primal-dual-qchain-yn MODEL=<model_name>
-```
+## Command Options
 
-## Experiment with FR
+### Training Parameters
+- `--epoch INT`: Number of training epochs
+- `--lr FLOAT`: Learning rate
+- `--batch-size INT`: Batch size for training
+- `--check-epoch INT`: Check evaluation every N epochs
 
-The possible model option is [ "bert"].
+### Data Parameters
+- `--data-path PATH`: Path to the data folder (default: "data/")
+- `--results-path PATH`: Path to save models and predictions (default: "models/")
+- `--train-file TEXT`: Training file option: Temp, Origin, SpaRTUN or Human (default: "TEMP")
+- `--test-file TEXT`: Test file option: Temp, Origin, SpaRTUN or Human (default: "TEMP")
+- `--train-size INT`: Training dataset size
+- `--test-size INT`: Test dataset size
 
-### Baseline
-```bash
-make baseline-fr
-```
+### Model Parameters
+- `--model TEXT`: Model type to use (bert, roberta, t5-adapter)
+- `--dropout`: Enable dropout
+- `--constraints`: Enable constraints
 
-### Primal-Dual
-```bash
-make primal-dual-fr
-```
+### Training Methods
+- `--pmd`: Use Primal Dual method
+- `--beta FLOAT`: Beta parameter for PMD (default: 0.5)
+- `--sampling`: Use sampling loss
 
-### Primal-Dual + Q-Chain
-```bash
-make primal-dual-qchain-fr
-```
+- `--sampling-size INT`: Sampling size (default: 1)
+
+### Additional Options
+- `--use-chains`: Use chains for data augmentation
+- `--text-rules`: Include rules as text
+- `--cuda INT`: CUDA device number (-1 for CPU, default: 0)
+
+### Model Loading/Saving
+- `--loaded`: Load and evaluate existing model
+- `--loaded-file TEXT`: File name to load model from
+- `--save`: Save the trained model
+- `--save-file TEXT`: File name to save model
 
 ## Tests
 
 ```bash
-make tests
+uv run pytest
 ```
 ## Known Issues
 
@@ -98,4 +102,4 @@ if self.programName.index('.') >= 0:
 if '.' in self.programName:
 ```
 
-**Why this is needed:** The library uses `.index('.')` which throws a `ValueError` when no dot is found in the program name. This happens when using CLI entry points like `q-chain temporal-fr` where the name file doesn't have a file extension.
+**Why this is needed:** The library uses `.index('.')` which throws a `ValueError` when no dot is found in the program name. This happens when using CLI entry points like `q-chain temporal-fr` where the name doesn't have a file extension.
