@@ -116,3 +116,7 @@ if '.' in self.programName:
 ```
 
 **Why this is needed:** The library uses `.index('.')` which throws a `ValueError` when no dot is found in the program name. This happens when using CLI entry points like `q-chain temporal-fr` where the name doesn't have a file extension.
+
+## TODO
+- create domiknows programs for T5-v4-FR and T5-v5-FR
+- create tests for graphs
