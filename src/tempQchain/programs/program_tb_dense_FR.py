@@ -2,8 +2,8 @@ import torch
 from domiknows.sensor.pytorch.learners import ModuleLearner
 from domiknows.sensor.pytorch.relation_sensors import CompositionCandidateSensor
 from domiknows.sensor.pytorch.sensors import FunctionalSensor, JointSensor, ReaderSensor
-from temQchain.logger import get_logger
 
+from tempQchain.logger import get_logger
 from tempQchain.programs.models import (
     BERTTokenizer,
     ClassifyLabelT5,
