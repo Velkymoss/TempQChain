@@ -7,15 +7,15 @@ import tqdm
 from domiknows.program.model.base import Mode
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, precision_score, recall_score
 
-from logger import get_logger
-from programs.Program_tb_dense_YN import program_declaration
-from readers.file_loaders import DomiKnowS_reader
+from tempQchain.logger import get_logger
+from tempQchain.programs.Program_tb_dense_YN import program_declaration
+from tempQchain.readers.file_loaders import DomiKnowS_reader
 
 logger = get_logger(__name__)
 
 
 def eval(program, testing_set, cur_device, args):
-    from graphs.graph_tb_dense_YN import answer_class
+    from tempQchain.graphs.graph_tb_dense_YN import answer_class
 
     labels = ["Yes", "No"]
     accuracy_ILP = 0
@@ -73,7 +73,7 @@ def eval(program, testing_set, cur_device, args):
 
 
 def train(program, train_set, eval_set, cur_device, limit, lr, program_name="DomiKnow", args=None):
-    from graphs.graph_tb_dense_YN import answer_class
+    from tempQchain.graphs.graph_tb_dense_YN import answer_class
 
     def evaluate():
         labels = ["Yes", "No"]

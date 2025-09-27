@@ -1,9 +1,9 @@
 [project]
-name = "spartunqchain"
+name = "tempQchain"
 version = "0.1.0"
-description = "fork of original repo, same package version"
+description = "An adaptation of the Q-chain approach used for Spartun"
 authors = [{ name = "Max Moser", email = "maxmoser.15@gmail.com" }]
-requires-python = "==3.12,<4.0"
+requires-python = ">=3.12.0"
 readme = "README.md"
 dependencies = [
     "domiknows==0.533",
@@ -23,7 +23,13 @@ dependencies = [
     "lxml>=6.0.0",
     "ipykernel>=6.30.0",
     "typer>=0.9.4",
+    "click<8.2.0"
 ]
+
+[project.scripts]
+q-chain = "tempQchain.main:app"
+temporal-fr = "tempQchain.main:temporal_fr_cli"
+temporal-yn = "tempQchain.main:temporal_yn_cli"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -48,25 +54,6 @@ source = [
 [tool.coverage.report]
 show_missing = true
 skip_covered = true
-
-[tool.hatch.build.targets.sdist]
-include = [
-    "src/readers",
-    "src/graphs",
-    "src/programs",
-]
-
-[tool.hatch.build.targets.wheel]
-include = [
-    "src/readers",
-    "src/graphs",
-    "src/programs",
-]
-
-[tool.hatch.build.targets.wheel.sources]
-"src/readers" = "readers"
-"src/graphs" = "graphs"
-"src/programs" = "programs"
 
 [build-system]
 requires = ["hatchling"]

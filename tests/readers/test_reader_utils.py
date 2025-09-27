@@ -1,6 +1,6 @@
 import pytest
 
-from src.readers.utils import label_fr_to_int
+from tempQchain.readers.utils import label_fr_to_int
 
 
 def test_label_fr_to_int_single_label():

@@ -6,20 +6,20 @@ import torch
 import tqdm
 import transformers
 
-from logger import get_logger
-from programs.program_tb_dense_FR import (
+from tempQchain.logger import get_logger
+from tempQchain.programs.program_tb_dense_FR import (
     program_declaration_tb_dense_fr,
     program_declaration_tb_dense_fr_T5,
     program_declaration_tb_dense_fr_T5_v2,
     program_declaration_tb_dense_fr_T5_v3,
 )
-from readers.file_loaders import DomiKnowS_reader
+from tempQchain.readers.file_loaders import DomiKnowS_reader
 
 logger = get_logger(__name__)
 
 
 def eval(program, testing_set, cur_device, args, print_result=False, multilabel=False):
-    from graphs.graph_tb_dense_FR import (
+    from tempQchain.graphs.graph_tb_dense_FR import (
         after,
         before,
         includes,

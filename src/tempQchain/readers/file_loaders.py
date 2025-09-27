@@ -2,9 +2,9 @@ import json
 
 import tqdm
 
-from logger import get_logger
-from readers.reader_classes import TrainReader
-from readers.utils import label_fr_to_int
+from tempQchain.logger import get_logger
+from tempQchain.readers.reader_classes import TrainReader
+from tempQchain.readers.utils import label_fr_to_int
 
 logger = get_logger(__name__)
 

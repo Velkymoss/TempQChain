@@ -80,98 +80,22 @@ make primal-dual-qchain-fr
 ```bash
 make tests
 ```
+## Known Issues
 
-## Transitivity Rules Table for TB-Dense
+### DomiKnows Library Bug Fix
 
-### Rule 1
+Due to a bug in the `domiknows==0.533` library, you need to manually fix one line of code after installation:
 
-| Relation 1   | Relation 2   | Resulting Relations |
-|--------------|--------------|---------------------|
-| before       | before       | before              |
-| after        | after        | after               |
-| includes     | includes     | includes            |
-| is included  | is included  | is included         |
-| simultaneous | simultaneous | simultaneous        |
-| vague        | vague        | vague               |
+**File:** `.venv/lib/python3.12/site-packages/domiknows/program/program.py` (line ~37)
 
-### Rule 2 
+**Change from:**
+```python
+if self.programName.index('.') >= 0:
+```
 
-| Relation 1   | Relation 2   | Resulting Relations |
-|--------------|--------------|---------------------|
-| before       | simultaneous | before              |
-| after        | simultaneous | after               |
-| includes     | simultaneous | includes            |
-| is included  | simultaneous | is included         |
-| vague        | simultaneous | vague               |
-| vague        | before       | vague               |
-| vague        | after        | vague               |
-| vague        | includes     | vague               |
-| vague        | is included  | vague               |
+**Change to:**
+```python
+if '.' in self.programName:
+```
 
-### Rules for "before"
-
-| Relation 1   | Relation 2   | Resulting Relations                                      |
-|--------------|--------------|----------------------------------------------------------|
-| before       | after        | before, after, includes, is included, simultaneous, vague|
-| before       | includes     | before, includes, vague                                  |
-| before       | is included  | before, is included, vague                               |
-| before       | vague        | before, includes, is included, vague                     |
-| before       | vague        | vague                                                    |
-
-### Rules for "after"
-
-| Relation 1   | Relation 2   | Resulting Relations                                      |
-|--------------|--------------|----------------------------------------------------------|
-| after        | before       | before, after, includes, is included, simultaneous, vague|
-| after        | includes     | after, includes, vague                                   |
-| after        | is included  | after, is included, vague                                |
-| after        | vague        | after, includes, is included, vague                      |
-| after        | vague        | vague                                                    |
-
-### Rules for "includes"
-
-| Relation 1   | Relation 2   | Resulting Relations                                      |
-|--------------|--------------|----------------------------------------------------------|
-| includes     | before       | before, includes, vague                                  |
-| includes     | after        | after, includes, vague                                   |
-| includes     | is included  | before, after, includes, is included, simultaneous, vague|
-| includes     | vague        | before, after, includes, vague                           |
-| includes     | vague        | vague                                                    |
-
-### Rules for "is included"
-
-| Relation 1   | Relation 2   | Resulting Relations                                      |
-|--------------|--------------|----------------------------------------------------------|
-| is included  | before       | before, is included, vague                               |
-| is included  | after        | after, is included, vague                                |
-| is included  | includes     | before, after, includes, is included, simultaneous, vague|
-| is included  | vague        | before, after, is included, vague                        |
-| is included  | vague        | vague                                                    |
-
-### Rules for "simultaneous"
-
-| Relation 1   | Relation 2   | Resulting Relations |
-|--------------|--------------|---------------------|
-| simultaneous | before       | before              |
-| simultaneous | after        | after               |
-| simultaneous | includes     | includes            |
-| simultaneous | is included  | is included         |
-| simultaneous | vague        | vague               |
-
-
-
-## TODOs
-
-### Max:
-- add the t0 tag match to the data
-- insert the event tag into the story
-- add full table of all rules used to the readme
-### Vasiliki:
-- create_rules_txt
-- debug chain run for temporal data
-- think about non-determinism -> document it on the repo
-### Think about:
-- Huggingface or domiknows?
-- if domiknows: how do we handle non-deterministic rules? How do we know/test that the graph works then?
-- think about why vague samples should be added for transitivity? -> if we gold label all non-deterministic transitivites as vague, does this ensure non-determinism in the graph? -> should we use that?
-- OR: measure for A - C in the transivity the gold label, so we can measure despite a non-deterministic rule if the model guesses the right relationship? - how to make the connection to the less?
+**Why this is needed:** The library uses `.index('.')` which throws a `ValueError` when no dot is found in the program name. This happens when using CLI entry points like `q-chain temporal-fr` where the name file doesn't have a file extension.

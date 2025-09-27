@@ -3,7 +3,7 @@ from domiknows.sensor.pytorch.learners import ModuleLearner
 from domiknows.sensor.pytorch.relation_sensors import CompositionCandidateSensor
 from domiknows.sensor.pytorch.sensors import FunctionalSensor, JointSensor, ReaderSensor
 
-from programs.models import (
+from tempQchain.programs.models import (
     BERTTokenizer,
     Llama3Tokenizer,
     MultipleClassYN,
@@ -13,13 +13,13 @@ from programs.models import (
     RoBERTaTokenizer,
     T5Tokenizer,
 )
-from programs.utils import check_reverse, check_symmetric, check_transitive
+from tempQchain.programs.utils import check_reverse, check_symmetric, check_transitive
 
 
 def program_declaration(
     cur_device, *, pmd=False, beta=0.5, sampling=False, sampleSize=1, dropout=False, constraints=False, model="bert"
 ):
-    from graphs.graph_tb_dense_YN import (
+    from tempQchain.graphs.graph_tb_dense_YN import (
         answer_class,
         graph,
         question,

@@ -1,9 +1,9 @@
 import random
 from typing import Literal
 
-from logger import get_logger
-from readers.data_models import SPARTUNQuestion, SPARTUNStory
-from readers.utils import VOCABULARY, label_fr_to_int
+from tempQchain.logger import get_logger
+from tempQchain.readers.data_models import SPARTUNQuestion, SPARTUNStory
+from tempQchain.readers.utils import VOCABULARY, label_fr_to_int
 
 random.seed(42)
 
@@ -214,7 +214,7 @@ class TrainReader:
 
         if size_relation == 0:
             return ""
-        
+
         event_1 = question.query[0]
         event_2 = question.query[1]
         relation_type = story.facts_info[f"{event_1}:{event_2}"][question.answer[0]]["rule"].split(",")[0]

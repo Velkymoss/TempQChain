@@ -3,7 +3,7 @@ from domiknows.sensor.pytorch.learners import ModuleLearner
 from domiknows.sensor.pytorch.relation_sensors import CompositionCandidateSensor
 from domiknows.sensor.pytorch.sensors import FunctionalSensor, JointSensor, ReaderSensor
 
-from programs.models import (
+from tempQchain.programs.models import (
     BERTTokenizer,
     ClassifyLabelT5,
     ClassifyLayer,
@@ -16,7 +16,7 @@ from programs.models import (
     T5TokenizerOutput,
     T5WithLora,
 )
-from programs.utils import check_symmetric, check_transitive
+from tempQchain.programs.utils import check_symmetric, check_transitive
 
 LABEL_DIM = 6
 
@@ -33,7 +33,7 @@ def program_declaration_tb_dense_fr(
     model: str = "bert",
 ):
     program = None
-    from graphs.graph_tb_dense_FR import (
+    from tempQchain.graphs.graph_tb_dense_FR import (
         after,
         before,
         graph,
@@ -310,7 +310,7 @@ def program_declaration_tb_dense_fr(
 def program_declaration_tb_dense_fr_T5(
     device, *, pmd=False, beta=0.5, sampling=False, sampleSize=1, dropout=False, constraints=False, spartun=True
 ):
-    from graphs.graph_tb_dense_FR import (
+    from tempQchain.graphs.graph_tb_dense_FR import (
         after,
         before,
         graph,
@@ -503,7 +503,7 @@ def program_declaration_tb_dense_fr_T5(
 def program_declaration_tb_dense_fr_T5_v2(
     device, *, pmd=False, beta=0.5, sampling=False, sampleSize=1, dropout=False, constraints=False, spartun=True
 ):
-    from graphs.graph_tb_dense_FR import (
+    from tempQchain.graphs.graph_tb_dense_FR import (
         after,
         before,
         graph,
@@ -692,7 +692,7 @@ def program_declaration_tb_dense_fr_T5_v3(
     device, *, pmd=False, beta=0.5, sampling=False, sampleSize=1, dropout=False, constraints=False, spartun=True
 ):
     program = None
-    from graphs.graph_tb_dense_FR import (
+    from tempQchain.graphs.graph_tb_dense_FR import (
         after,
         before,
         graph,
@@ -818,7 +818,7 @@ def program_declaration_tb_dense_fr_T5_v3(
 
     t5_normal_tokenizer = AutoTokenizer.from_pretrained("google/flan-t5-base")
 
-    from programs.models import ClassifyLayer2, T5WithLoraGenerativeCLF
+    from tempQchain.programs.models import ClassifyLayer2, T5WithLoraGenerativeCLF
 
     t5_model = T5WithLoraGenerativeCLF(
         "google/flan-t5-base", label=all_labels, tokenizer=t5_normal_tokenizer, device=device, adapter=True

@@ -43,7 +43,7 @@ def temporal_fr(
 ):
     import argparse
 
-    import temporal_FR
+    import tempQchain.temporal_FR as temporal_FR
 
     args = argparse.Namespace(
         epoch=epoch,
@@ -119,7 +119,7 @@ def temporal_yn(
 ):
     import argparse
 
-    import temporal_YN
+    import tempQchain.temporal_YN as temporal_YN
 
     args = argparse.Namespace(
         epoch=epoch,
