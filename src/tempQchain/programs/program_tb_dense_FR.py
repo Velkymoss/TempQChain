@@ -2,6 +2,7 @@ import torch
 from domiknows.sensor.pytorch.learners import ModuleLearner
 from domiknows.sensor.pytorch.relation_sensors import CompositionCandidateSensor
 from domiknows.sensor.pytorch.sensors import FunctionalSensor, JointSensor, ReaderSensor
+from temQchain.logger import get_logger
 
 from tempQchain.programs.models import (
     BERTTokenizer,
@@ -17,6 +18,8 @@ from tempQchain.programs.models import (
     T5WithLora,
 )
 from tempQchain.programs.utils import check_symmetric, check_transitive
+
+logger = get_logger(__name__)
 
 LABEL_DIM = 6
 
@@ -136,7 +139,7 @@ def program_declaration_tb_dense_fr(
     # Model
     if model == "t5-adapter":
         t5_model_id = "google/flan-t5-base"
-        print("Using", t5_model_id)
+        logger.info("Using", t5_model_id)
         question["input_ids"] = JointSensor(
             story_contain, "question", "story", forward=T5Tokenizer(t5_model_id), device=device
         )
@@ -191,7 +194,7 @@ def program_declaration_tb_dense_fr(
             device=device,
         )
     else:
-        print("Using BERT")
+        logger.info("Using BERT")
         question["input_ids"] = JointSensor(story_contain, "question", "story", forward=BERTTokenizer(), device=device)
         clf1 = MultipleClassYN_Hidden.from_pretrained("bert-base-uncased", device=device, drp=dropout)
         question["hidden_layer"] = ModuleLearner("input_ids", module=clf1, device=device)
@@ -247,7 +250,7 @@ def program_declaration_tb_dense_fr(
     ]
 
     if constraints:
-        print("Included constraints")
+        logger.info("Included constraints")
         inverse[inv_question1.reversed, inv_question2.reversed] = CompositionCandidateSensor(
             relations=(inv_question1.reversed, inv_question2.reversed), forward=check_symmetric, device=device
         )
@@ -268,7 +271,7 @@ def program_declaration_tb_dense_fr(
 
     infer_list = ["ILP", "local/argmax"]  # ['ILP', 'local/argmax']
     if pmd:
-        print("Using PMD program")
+        logger.info("Using PMD program")
         program = PrimalDualProgram(
             graph,
             SolverModel,
@@ -294,7 +297,7 @@ def program_declaration_tb_dense_fr(
             device=device,
         )
     else:
-        print("Using Base program")
+        logger.info("Using Base program")
         program = SolverPOIProgram(
             graph,
             poi=poi_list,
@@ -476,7 +479,7 @@ def program_declaration_tb_dense_fr_T5(
 
     infer_list = ["local/argmax"]  # ['ILP', 'local/argmax']
     if pmd:
-        print("Using PMD program")
+        logger.info("Using PMD program")
         program = PrimalDualProgram(
             graph, SolverModel, poi=poi_list, inferTypes=infer_list, loss=ValueTracker(LossT5), beta=beta, device=device
         )
@@ -494,7 +497,7 @@ def program_declaration_tb_dense_fr_T5(
             device=device,
         )
     else:
-        print("Using Base program")
+        logger.info("Using Base program")
         program = SolverPOIProgram(graph, poi=poi_list, inferTypes=infer_list, loss=ValueTracker(LossT5), device=device)
 
     return program
@@ -664,7 +667,7 @@ def program_declaration_tb_dense_fr_T5_v2(
 
     infer_list = ["local/argmax"]  # ['ILP', 'local/argmax']
     if pmd:
-        print("Using PMD program")
+        logger.info("Using PMD program")
         program = PrimalDualProgram(
             graph, SolverModel, poi=poi_list, inferTypes=infer_list, loss=ValueTracker(LossT5), beta=beta, device=device
         )
@@ -682,7 +685,7 @@ def program_declaration_tb_dense_fr_T5_v2(
             device=device,
         )
     else:
-        print("Using Base program")
+        logger.info("Using Base program")
         program = SolverPOIProgram(graph, poi=poi_list, inferTypes=infer_list, loss=ValueTracker(LossT5), device=device)
 
     return program
@@ -809,7 +812,7 @@ def program_declaration_tb_dense_fr_T5_v3(
     def read_label(_, label):
         return label
 
-    print("Using T5")
+    logger.info("Using T5")
 
     from transformers import AutoTokenizer
 
@@ -897,7 +900,7 @@ def program_declaration_tb_dense_fr_T5_v3(
     ]
 
     if constraints:
-        print("Included constraints")
+        logger.info("Included constraints")
         inverse[inv_question1.reversed, inv_question2.reversed] = CompositionCandidateSensor(
             relations=(inv_question1.reversed, inv_question2.reversed), forward=check_symmetric, device=device
         )
@@ -918,7 +921,7 @@ def program_declaration_tb_dense_fr_T5_v3(
 
     infer_list = ["ILP", "local/argmax"]  # ['ILP', 'local/argmax']
     if pmd:
-        print("Using PMD program")
+        logger.info("Using PMD program")
         program = PrimalDualProgram(
             graph,
             SolverModel,
@@ -944,7 +947,7 @@ def program_declaration_tb_dense_fr_T5_v3(
             device=device,
         )
     else:
-        print("Using Base program")
+        logger.info("Using Base program")
         program = SolverPOIProgram(
             graph,
             poi=poi_list,

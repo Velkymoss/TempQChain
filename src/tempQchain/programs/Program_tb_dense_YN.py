@@ -3,6 +3,7 @@ from domiknows.sensor.pytorch.learners import ModuleLearner
 from domiknows.sensor.pytorch.relation_sensors import CompositionCandidateSensor
 from domiknows.sensor.pytorch.sensors import FunctionalSensor, JointSensor, ReaderSensor
 
+from tempQchain.logger import get_logger
 from tempQchain.programs.models import (
     BERTTokenizer,
     Llama3Tokenizer,
@@ -14,6 +15,8 @@ from tempQchain.programs.models import (
     T5Tokenizer,
 )
 from tempQchain.programs.utils import check_reverse, check_symmetric, check_transitive
+
+logger = get_logger(__name__)
 
 
 def program_declaration(
@@ -77,7 +80,7 @@ def program_declaration(
         return label
 
     question[answer_class] = FunctionalSensor(story_contain, "label", forward=read_label, label=True, device=cur_device)
-    print("Using the {:} as the baseline model".format(model))
+    logger.info("Using the {:} as the baseline model".format(model))
 
     if model == "roberta":
         question["input_ids"] = JointSensor(
@@ -107,7 +110,7 @@ def program_declaration(
 
     # Including the constraints relation check
     if constraints:
-        print("Include logical constraints")
+        logger.info("Include logical constraints")
         symmetric[s_quest1.reversed, s_quest2.reversed] = CompositionCandidateSensor(
             relations=(s_quest1.reversed, s_quest2.reversed), forward=check_symmetric, device=cur_device
         )
@@ -132,7 +135,7 @@ def program_declaration(
 
     infer_list = ["local/argmax"]  # ['ILP', 'local/argmax']
     if pmd:
-        print("Using Primal Dual Program")
+        logger.info("Using Primal Dual Program")
         program = PrimalDualProgram(
             graph,
             SolverModel,
@@ -158,7 +161,7 @@ def program_declaration(
             device=cur_device,
         )
     else:
-        print("Using Base Program")
+        logger.info("Using Base Program")
         program = SolverPOIProgram(
             graph,
             poi=poi_list,
