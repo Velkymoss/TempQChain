@@ -59,7 +59,7 @@ def program_declaration_tb_dense_fr(
     dropout: bool = False,
     constraints: bool = False,
     model: str = "bert",
-):
+) -> PrimalDualProgram | SampleLossProgram | SolverPOIProgram:
     program = None
 
     story["questions"] = ReaderSensor(keyword="questions")
@@ -295,7 +295,7 @@ def program_declaration_tb_dense_fr(
 
 def program_declaration_tb_dense_fr_T5(
     device, *, pmd=False, beta=0.5, sampling=False, sampleSize=1, dropout=False, constraints=False, spartun=True
-):
+) -> PrimalDualProgram | SampleLossProgram | SolverPOIProgram:
     story["questions"] = ReaderSensor(keyword="questions")
     story["stories"] = ReaderSensor(keyword="stories")
     story["relations"] = ReaderSensor(keyword="relation")
@@ -447,7 +447,7 @@ def program_declaration_tb_dense_fr_T5(
 
 def program_declaration_tb_dense_fr_T5_v2(
     device, *, pmd=False, beta=0.5, sampling=False, sampleSize=1, dropout=False, constraints=False, spartun=True
-):
+) -> PrimalDualProgram | SampleLossProgram | SolverPOIProgram:
     story["questions"] = ReaderSensor(keyword="questions")
     story["stories"] = ReaderSensor(keyword="stories")
     story["relations"] = ReaderSensor(keyword="relation")
@@ -594,7 +594,7 @@ def program_declaration_tb_dense_fr_T5_v2(
 
 def program_declaration_tb_dense_fr_T5_v3(
     device, *, pmd=False, beta=0.5, sampling=False, sampleSize=1, dropout=False, constraints=False, spartun=True
-):
+) -> PrimalDualProgram | SampleLossProgram | SolverPOIProgram:
     program = None
 
     story["questions"] = ReaderSensor(keyword="questions")
