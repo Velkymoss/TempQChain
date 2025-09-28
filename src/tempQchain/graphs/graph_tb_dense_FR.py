@@ -27,7 +27,7 @@ with Graph("temporal_QA_rule") as graph:
     output_for_loss = question(name="output_for_loss")
 
     # opposite concepts
-    exactL(before, after)
+    exactL(before, after, name="before_after-inverse")
     exactL(includes, is_included)
 
     # Inverse Constrains
@@ -215,3 +215,7 @@ with Graph("temporal_QA_rule") as graph:
 
 if __name__ == "__main__":
     graph.visualize("graph-temporal")
+    from collections import OrderedDict
+
+    print(OrderedDict(graph.logicalConstrainsRecursive))
+    print(len(OrderedDict(graph.logicalConstrainsRecursive)))
