@@ -1,8 +1,33 @@
 import torch
+from domiknows.program import SolverPOIProgram
+from domiknows.program.loss import NBCrossEntropyLoss
+from domiknows.program.lossprogram import PrimalDualProgram, SampleLossProgram
+from domiknows.program.metric import DatanodeCMMetric, MacroAverageTracker, PRF1Tracker, ValueTracker
+from domiknows.program.model.pytorch import SolverModel
 from domiknows.sensor.pytorch.learners import ModuleLearner
 from domiknows.sensor.pytorch.relation_sensors import CompositionCandidateSensor
 from domiknows.sensor.pytorch.sensors import FunctionalSensor, JointSensor, ReaderSensor
 
+from tempQchain.graphs.graph_tb_dense_FR import (
+    after,
+    before,
+    graph,
+    includes,
+    inv_question1,
+    inv_question2,
+    inverse,
+    is_included,
+    output_for_loss,
+    question,
+    simultaneous,
+    story,
+    story_contain,
+    tran_quest1,
+    tran_quest2,
+    tran_quest3,
+    transitive,
+    vague,
+)
 from tempQchain.logger import get_logger
 from tempQchain.programs.models import (
     BERTTokenizer,
@@ -36,25 +61,6 @@ def program_declaration_tb_dense_fr(
     model: str = "bert",
 ):
     program = None
-    from tempQchain.graphs.graph_tb_dense_FR import (
-        after,
-        before,
-        graph,
-        includes,
-        inv_question1,
-        inv_question2,
-        inverse,
-        is_included,
-        question,
-        simultaneous,
-        story,
-        story_contain,
-        tran_quest1,
-        tran_quest2,
-        tran_quest3,
-        transitive,
-        vague,
-    )
 
     story["questions"] = ReaderSensor(keyword="questions")
     story["stories"] = ReaderSensor(keyword="stories")
@@ -144,14 +150,6 @@ def program_declaration_tb_dense_fr(
             story_contain, "question", "story", forward=T5Tokenizer(t5_model_id), device=device
         )
 
-        all_answers = [
-            after,
-            before,
-            includes,
-            is_included,
-            simultaneous,
-            vague,
-        ]
         expected_label = [
             "after",
             "before",
@@ -198,14 +196,7 @@ def program_declaration_tb_dense_fr(
         question["input_ids"] = JointSensor(story_contain, "question", "story", forward=BERTTokenizer(), device=device)
         clf1 = MultipleClassYN_Hidden.from_pretrained("bert-base-uncased", device=device, drp=dropout)
         question["hidden_layer"] = ModuleLearner("input_ids", module=clf1, device=device)
-        # all_answers = [
-        #     after,
-        #     before,
-        #     includes,
-        #     is_included,
-        #     simultaneous,
-        #     vague,
-        # ]
+
         question[after] = ModuleLearner(
             "hidden_layer", module=ClassifyLayer(clf1.hidden_size, device=device, drp=dropout), device=device
         )
@@ -263,12 +254,6 @@ def program_declaration_tb_dense_fr(
 
         poi_list.extend([inverse, transitive])
 
-    from domiknows.program import SolverPOIProgram
-    from domiknows.program.loss import NBCrossEntropyLoss
-    from domiknows.program.lossprogram import PrimalDualProgram, SampleLossProgram
-    from domiknows.program.metric import DatanodeCMMetric, MacroAverageTracker, PRF1Tracker
-    from domiknows.program.model.pytorch import SolverModel
-
     infer_list = ["ILP", "local/argmax"]  # ['ILP', 'local/argmax']
     if pmd:
         logger.info("Using PMD program")
@@ -313,27 +298,6 @@ def program_declaration_tb_dense_fr(
 def program_declaration_tb_dense_fr_T5(
     device, *, pmd=False, beta=0.5, sampling=False, sampleSize=1, dropout=False, constraints=False, spartun=True
 ):
-    from tempQchain.graphs.graph_tb_dense_FR import (
-        after,
-        before,
-        graph,
-        includes,
-        inv_question1,
-        inv_question2,
-        inverse,
-        is_included,
-        output_for_loss,
-        question,
-        simultaneous,
-        story,
-        story_contain,
-        tran_quest1,
-        tran_quest2,
-        tran_quest3,
-        transitive,
-        vague,
-    )
-
     story["questions"] = ReaderSensor(keyword="questions")
     story["stories"] = ReaderSensor(keyword="stories")
     story["relations"] = ReaderSensor(keyword="relation")
@@ -405,15 +369,6 @@ def program_declaration_tb_dense_fr_T5(
         story_contain, "text_labels", forward=t5_outTokenizer, label=True, device=device
     )
 
-    all_answers = [
-        after,
-        before,
-        includes,
-        is_included,
-        simultaneous,
-        vague,
-    ]
-
     question["output_encoder"] = ModuleLearner(story_contain, "input_ids", module=T5_model, device=device)
     question["output_decoder"] = FunctionalSensor(
         story_contain, "output_encoder", forward=T5TokenizerDecoder("google/flan-t5-base"), device=device
@@ -472,11 +427,6 @@ def program_declaration_tb_dense_fr_T5(
 
         poi_list.extend([inverse, transitive])
 
-    from domiknows.program import SolverPOIProgram
-    from domiknows.program.lossprogram import PrimalDualProgram, SampleLossProgram
-    from domiknows.program.metric import ValueTracker
-    from domiknows.program.model.pytorch import SolverModel
-
     infer_list = ["local/argmax"]  # ['ILP', 'local/argmax']
     if pmd:
         logger.info("Using PMD program")
@@ -506,27 +456,6 @@ def program_declaration_tb_dense_fr_T5(
 def program_declaration_tb_dense_fr_T5_v2(
     device, *, pmd=False, beta=0.5, sampling=False, sampleSize=1, dropout=False, constraints=False, spartun=True
 ):
-    from tempQchain.graphs.graph_tb_dense_FR import (
-        after,
-        before,
-        graph,
-        includes,
-        inv_question1,
-        inv_question2,
-        inverse,
-        is_included,
-        output_for_loss,
-        question,
-        simultaneous,
-        story,
-        story_contain,
-        tran_quest1,
-        tran_quest2,
-        tran_quest3,
-        transitive,
-        vague,
-    )
-
     story["questions"] = ReaderSensor(keyword="questions")
     story["stories"] = ReaderSensor(keyword="stories")
     story["relations"] = ReaderSensor(keyword="relation")
@@ -596,15 +525,6 @@ def program_declaration_tb_dense_fr_T5_v2(
         story_contain, "text_labels", forward=t5_outTokenizer, label=True, device=device
     )
 
-    all_answers = [
-        after,
-        before,
-        includes,
-        is_included,
-        simultaneous,
-        vague,
-    ]
-
     question["output_encoder"] = ModuleLearner(story_contain, "input_ids", module=T5_model, device=device)
     question["output_decoder"] = FunctionalSensor(
         story_contain, "output_encoder", forward=T5TokenizerDecoder("google/flan-t5-base"), device=device
@@ -660,11 +580,6 @@ def program_declaration_tb_dense_fr_T5_v2(
 
         poi_list.extend([inverse, transitive])
 
-    from domiknows.program import SolverPOIProgram
-    from domiknows.program.lossprogram import PrimalDualProgram, SampleLossProgram
-    from domiknows.program.metric import ValueTracker
-    from domiknows.program.model.pytorch import SolverModel
-
     infer_list = ["local/argmax"]  # ['ILP', 'local/argmax']
     if pmd:
         logger.info("Using PMD program")
@@ -695,25 +610,6 @@ def program_declaration_tb_dense_fr_T5_v3(
     device, *, pmd=False, beta=0.5, sampling=False, sampleSize=1, dropout=False, constraints=False, spartun=True
 ):
     program = None
-    from tempQchain.graphs.graph_tb_dense_FR import (
-        after,
-        before,
-        graph,
-        includes,
-        inv_question1,
-        inv_question2,
-        inverse,
-        is_included,
-        question,
-        simultaneous,
-        story,
-        story_contain,
-        tran_quest1,
-        tran_quest2,
-        tran_quest3,
-        transitive,
-        vague,
-    )
 
     story["questions"] = ReaderSensor(keyword="questions")
     story["stories"] = ReaderSensor(keyword="stories")
@@ -835,14 +731,6 @@ def program_declaration_tb_dense_fr_T5_v3(
         story_contain, "input_ids", "label_input_ids", module=t5_model, device=device
     )
 
-    all_answers = [
-        after,
-        before,
-        includes,
-        is_included,
-        simultaneous,
-        vague,
-    ]
     hidden_layers = 2
     question[after] = ModuleLearner(
         "hidden_layer",
@@ -912,12 +800,6 @@ def program_declaration_tb_dense_fr_T5_v3(
         )
 
         poi_list.extend([inverse, transitive])
-
-    from domiknows.program import SolverPOIProgram
-    from domiknows.program.loss import NBCrossEntropyLoss
-    from domiknows.program.lossprogram import PrimalDualProgram, SampleLossProgram
-    from domiknows.program.metric import DatanodeCMMetric, MacroAverageTracker, PRF1Tracker
-    from domiknows.program.model.pytorch import SolverModel
 
     infer_list = ["ILP", "local/argmax"]  # ['ILP', 'local/argmax']
     if pmd:
