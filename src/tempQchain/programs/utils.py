@@ -1,4 +1,7 @@
-def check_symmetric(arg1, arg2):
+from domiknows.graph.dataNode import DataNode
+
+
+def check_symmetric(arg1: DataNode, arg2: DataNode) -> bool:
     if arg1 == arg2:
         return False
     relation_arg2 = arg2.getAttribute("relation")
@@ -12,7 +15,7 @@ def check_symmetric(arg1, arg2):
     return False
 
 
-def check_reverse(arg10, arg20):
+def check_reverse(arg10: DataNode, arg20: DataNode) -> bool:
     if arg10 == arg20:
         return False
     relation_arg2 = arg20.getAttribute("relation")
@@ -26,12 +29,13 @@ def check_reverse(arg10, arg20):
     return False
 
 
-def check_transitive(arg11, arg22, arg33):
+def check_transitive(arg11: DataNode, arg22: DataNode, arg33: DataNode) -> bool:
     if arg11 == arg22 or arg11 == arg33 or arg22 == arg33:
         return False
     relation_arg3 = arg33.getAttribute("relation")
     if relation_arg3 == "":
         return False
+    # exmple of relation_describe: ['transitive', '1', '4']
     relation_describe = relation_arg3.split(",")
     if relation_describe[0] == "transitive":
         qid1 = arg11.getAttribute("id").item()
