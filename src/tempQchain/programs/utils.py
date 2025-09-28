@@ -1,4 +1,13 @@
+import torch
 from domiknows.graph.dataNode import DataNode
+
+
+def to_int_list(x):
+    return torch.LongTensor([int(i) for i in x])
+
+
+def to_float_list(x):
+    return torch.Tensor([float(i) for i in x])
 
 
 def check_symmetric(arg1: DataNode, arg2: DataNode) -> bool:

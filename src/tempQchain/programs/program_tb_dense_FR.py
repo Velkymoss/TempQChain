@@ -42,7 +42,7 @@ from tempQchain.programs.models import (
     T5TokenizerOutput,
     T5WithLora,
 )
-from tempQchain.programs.utils import check_symmetric, check_transitive
+from tempQchain.programs.utils import check_symmetric, check_transitive, to_float_list, to_int_list
 
 logger = get_logger(__name__)
 
@@ -67,6 +67,7 @@ def program_declaration_tb_dense_fr(
     story["relations"] = ReaderSensor(keyword="relation")
     story["question_ids"] = ReaderSensor(keyword="question_ids")
     story["labels"] = ReaderSensor(keyword="labels")
+
     all_labels = [
         "after",
         "before",
@@ -75,9 +76,6 @@ def program_declaration_tb_dense_fr(
         "simultaneous",
         "vague",
     ]
-
-    def to_int_list(x):
-        return torch.LongTensor([int(i) for i in x])
 
     def make_labels(label_list):
         labels = label_list.split("@@")
@@ -313,12 +311,6 @@ def program_declaration_tb_dense_fr_T5(
     ]
     map_label_index = {text: i for i, text in enumerate(all_labels)}
 
-    def to_int_list(x):
-        return torch.LongTensor([int(i) for i in x])
-
-    def to_float_list(x):
-        return torch.Tensor([float(i) for i in x])
-
     def make_labels(label_list):
         labels = label_list.split("@@")
         text_label = ["" for _ in range(len(labels))]
@@ -471,12 +463,6 @@ def program_declaration_tb_dense_fr_T5_v2(
     ]
     map_label_index = {text: i for i, text in enumerate(all_labels)}
 
-    def to_int_list(x):
-        return torch.LongTensor([int(i) for i in x])
-
-    def to_float_list(x):
-        return torch.Tensor([float(i) for i in x])
-
     def make_labels(label_list):
         labels = label_list.split("@@")
         text_label = ["" for _ in range(len(labels))]
@@ -624,9 +610,6 @@ def program_declaration_tb_dense_fr_T5_v3(
         "simultaneous",
         "vague",
     ]
-
-    def to_int_list(x):
-        return torch.LongTensor([int(i) for i in x])
 
     def make_labels(label_list):
         labels = label_list.split("@@")
@@ -964,9 +947,6 @@ def program_declaration_tb_dense_fr_T5_v3(
 #     token_each_label = t5_model.token_each_label
 #     token_map_normalize = t5_model.label_token_map_normalize
 #     token_map = t5_model.label_token_map
-
-#     def to_int_list(x):
-#         return torch.LongTensor([int(i) for i in x])
 
 #     def make_labels(label_list):
 #         labels = label_list.split("@@")
@@ -1454,9 +1434,6 @@ def program_declaration_tb_dense_fr_T5_v3(
 
 #     token_each_label = t5_model.token_each_label
 #     token_map = t5_model.label_token_map
-
-#     def to_int_list(x):
-#         return torch.LongTensor([int(i) for i in x])
 
 #     def make_labels(label_list):
 #         labels = label_list.split("@@")
