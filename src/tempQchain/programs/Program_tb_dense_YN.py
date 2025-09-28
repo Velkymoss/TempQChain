@@ -1,8 +1,30 @@
 import torch
+from domiknows.program import SolverPOIProgram
+from domiknows.program.loss import NBCrossEntropyLoss
+from domiknows.program.lossprogram import PrimalDualProgram, SampleLossProgram
+from domiknows.program.metric import DatanodeCMMetric, MacroAverageTracker, PRF1Tracker
+from domiknows.program.model.pytorch import SolverModel
 from domiknows.sensor.pytorch.learners import ModuleLearner
 from domiknows.sensor.pytorch.relation_sensors import CompositionCandidateSensor
 from domiknows.sensor.pytorch.sensors import FunctionalSensor, JointSensor, ReaderSensor
 
+from tempQchain.graphs.graph_tb_dense_YN import (
+    answer_class,
+    graph,
+    question,
+    r_quest1,
+    r_quest2,
+    reverse,
+    s_quest1,
+    s_quest2,
+    story,
+    story_contain,
+    symmetric,
+    t_quest1,
+    t_quest2,
+    t_quest3,
+    transitive,
+)
 from tempQchain.logger import get_logger
 from tempQchain.programs.models import (
     BERTTokenizer,
@@ -22,24 +44,6 @@ logger = get_logger(__name__)
 def program_declaration(
     cur_device, *, pmd=False, beta=0.5, sampling=False, sampleSize=1, dropout=False, constraints=False, model="bert"
 ):
-    from tempQchain.graphs.graph_tb_dense_YN import (
-        answer_class,
-        graph,
-        question,
-        r_quest1,
-        r_quest2,
-        reverse,
-        s_quest1,
-        s_quest2,
-        story,
-        story_contain,
-        symmetric,
-        t_quest1,
-        t_quest2,
-        t_quest3,
-        transitive,
-    )
-
     story["questions"] = ReaderSensor(keyword="questions")
     story["stories"] = ReaderSensor(keyword="stories")
     story["relations"] = ReaderSensor(keyword="relation")
@@ -126,12 +130,6 @@ def program_declaration(
         )
 
         poi_list.extend([symmetric, reverse, transitive])
-
-    from domiknows.program import SolverPOIProgram
-    from domiknows.program.loss import NBCrossEntropyLoss
-    from domiknows.program.lossprogram import PrimalDualProgram, SampleLossProgram
-    from domiknows.program.metric import DatanodeCMMetric, MacroAverageTracker, PRF1Tracker
-    from domiknows.program.model.pytorch import SolverModel
 
     infer_list = ["local/argmax"]  # ['ILP', 'local/argmax']
     if pmd:
