@@ -258,7 +258,7 @@ def main(args):
             sampling=args.sampling,
             sampleSize=args.sampling_size,
             dropout=args.dropout,
-            constraints=args.constraints,
+            constraintts=args.constraints,
         )
     else:
         program = program_declaration_tb_dense_fr(
@@ -284,6 +284,11 @@ def main(args):
         batch_size=args.batch_size,
         rule_text=args.text_rules,
     )
+
+    # from tempQchain.train import dummy_train_data
+
+    # training_set = dummy_train_data
+
     print(training_set, file=open("training_df.txt", "a"))
 
     test_file = "tb_dense_test.json"

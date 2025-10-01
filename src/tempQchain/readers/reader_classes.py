@@ -1,9 +1,8 @@
 import random
-from typing import Literal
 
 from tempQchain.logger import get_logger
 from tempQchain.readers.data_models import SPARTUNQuestion, SPARTUNStory
-from tempQchain.readers.utils import VOCABULARY, label_fr_to_int
+from tempQchain.readers.utils import label_fr_to_int
 
 random.seed(42)
 
@@ -12,13 +11,16 @@ logger = get_logger(__name__)
 
 class TrainReader:
     def __init__(
-        self, data: list[dict], question_type: str, limit_questions: int, upward_level: int, simple: bool = False
+        self,
+        data: list[dict],
+        question_type: str,
+        limit_questions: int,
+        upward_level: int,
     ):
         self.data = data
         self.question_type = question_type
         self.limit_questions = limit_questions
         self.upward_level = upward_level
-        self.simple = simple
 
         self.dataset = []
         self.count_questions = 0
@@ -69,6 +71,9 @@ class TrainReader:
             self.dataset.append(batch_question)
 
     def _process_question(self, question: SPARTUNQuestion, story: SPARTUNStory):
+        self.question_id = {} 
+        self.run_id_within_q = 0
+
         # Extracting objects from question
         obj1, obj2 = question.query
 
@@ -80,7 +85,7 @@ class TrainReader:
         self.added_questions = []
         self.reasoning_steps_from_target = self.upward_level
 
-        # Create question id of current answer
+        # Create question id of current answer not in question_id dict
         if current_key not in self.question_id:
             self.question_id[current_key] = self.run_id_within_q
             self.run_id_within_q += 1
@@ -88,15 +93,6 @@ class TrainReader:
         label = self._get_label(question)
 
         self.added_questions.append((question.question, label, current_key))
-
-        if self.simple:
-            if self.question_type == "YN":
-                # If the answer of question is no, adding another question asking the same thing but "Yes" input
-                if label.lower() == "no":
-                    yes_question = self._create_yes_question_for_no(target_question, current_key, story)
-                    self.added_questions.append(yes_question)
-
-                    self.reasoning_steps_from_target -= 1
 
         self._process_reasoning_steps(target_question, story, question)
 
@@ -158,56 +154,16 @@ class TrainReader:
             # algorithm looks up "0x0:0" in facts_info dict, non-existent there -> dataset issue,
             # produces key error in original code
             logger.warning(f"Key {fact_info_key} not found in story facts_info.")
-            # print("Key is", fact_info_key)
-            # print("Relation is", current_fact[2].lower())
-            # print(story.facts_info)
             return [], current_key
 
     def _create_question_from_previous_fact(self, previous_fact: list[str], story: SPARTUNStory) -> None:
         previous_key = self._create_key(*previous_fact)
-        fact_info_prev_key = self._create_key(previous_fact[0], previous_fact[1], "")
 
         if previous_key not in self.question_id:
             self.question_id[previous_key] = self.run_id_within_q
             self.run_id_within_q += 1
 
         self.previous_ids.append(str(self.question_id[previous_key]))
-
-        if self.simple:
-            if self.question_type == "YN":
-                self.added_questions.append(
-                    (
-                        self._create_simple_question(*previous_fact, story.objects_info),
-                        "Yes",
-                        previous_key,
-                    )
-                )
-            else:
-                self.added_questions.append(
-                    (
-                        self._create_simple_question(*previous_fact, story.objects_info),
-                        label_fr_to_int(list(story.facts_info[fact_info_prev_key].keys())),
-                        previous_key,
-                    )
-                )
-
-    def _create_yes_question_for_no(
-        self, target_question: tuple[str, str, str], current_key: str, story: SPARTUNStory
-    ) -> tuple[str, Literal["Yes"], str]:
-        # current_key: str = 'obj1:obj2:target_relation' - related to target_question
-        target_key = self._create_key(*target_question)
-        yes_question = (
-            self._create_simple_question(*target_question, story.objects_info),
-            "Yes",
-            target_key,
-        )
-
-        if target_key not in self.question_id:
-            self.question_id[target_key] = self.run_id_within_q
-            self.run_id_within_q += 1
-            self.relation_info[current_key] = "reverse," + str(self.question_id[target_key])
-
-        return yes_question
 
     def _get_relation_type(self, question: SPARTUNQuestion, story: SPARTUNStory) -> str:
         size_relation = len(self.previous_ids)
@@ -218,6 +174,7 @@ class TrainReader:
         event_1 = question.query[0]
         event_2 = question.query[1]
         relation_type = story.facts_info[f"{event_1}:{event_2}"][question.answer[0]]["rule"].split(",")[0]
+        # relation_type = "symmetric" if size_relation == 1 else "transitive" if size_relation >= 2 else ""
         return relation_type + "," + ",".join(self.previous_ids)
 
     def _get_label(self, question: SPARTUNQuestion) -> str:
@@ -251,36 +208,3 @@ class TrainReader:
             return f"{obj1}:{obj2}:{relation}"
         else:
             return f"{obj1}:{obj2}"
-
-    def _create_simple_question(self, obj1: str, obj2: str, relation: str, obj_info: dict) -> str:
-        # TODO: Not use this method
-        """
-        Generates a simple question string based on two objects, their relation, and the desired question type.
-
-        Args:
-            obj1 (str): The key for the first object in the obj_info dictionary.
-            obj2 (str): The key for the second object in the obj_info dictionary.
-            relation (str): The relation between obj1 and obj2, used to select the appropriate vocabulary.
-            obj_info (dict): A dictionary containing information about objects, where each key maps to a dictionary with at least a "full_name" field.
-
-        Returns:
-            str: The generated question as a string.
-        """
-        if self.question_type == "YN":
-            return (
-                "Is "
-                + obj_info[obj1]["full_name"]
-                + " "
-                + (VOCABULARY[relation][0] if isinstance(VOCABULARY[relation], list) else VOCABULARY[relation])
-                + " "
-                + obj_info[obj2]["full_name"]
-                + "?"
-            )
-
-        question_fr1 = "Where is {:} relative to the {:}?".format(
-            obj_info[obj1]["full_name"], obj_info[obj2]["full_name"]
-        )
-        question_fr2 = "What is the position of the {:} regarding {:}?".format(
-            obj_info[obj1]["full_name"], obj_info[obj2]["full_name"]
-        )
-        return question_fr1 if random.random() < 0.5 else question_fr2
