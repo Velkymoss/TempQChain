@@ -169,14 +169,14 @@ def DomiKnowS_reader(
 
 if __name__ == "__main__":
     dataset = DomiKnowS_reader(
-        "data/" + "tb_dense.json",
+        "data/" + "tb_dense_train.json",
         "FR",
-        size=10,
+        size=50,
         upward_level=3,
         type_dataset=None,
         reasoning_steps=0,
         augmented=True,
-        batch_size=8,
+        batch_size=50,
         rule_text=False,
     )
     print(dataset)

@@ -25,7 +25,6 @@ class TrainReader:
         self.dataset = []
         self.count_questions = 0
         self.count_original = 0
-        self.all_batch_dynamic_info = {}
         # reset per story
         self.relation_info = {}
         self.question_id = {}
@@ -43,7 +42,6 @@ class TrainReader:
 
         logger.info(f"Original questions {self.count_original}")
         logger.info(f"Total questions {self.count_questions}")
-        logger.info(self.all_batch_dynamic_info)
 
         return self.dataset
 
@@ -63,17 +61,10 @@ class TrainReader:
 
             self._process_question(question, story)
 
-            if len(self.added_questions) not in self.all_batch_dynamic_info:
-                self.all_batch_dynamic_info[len(self.added_questions)] = 0
-            self.all_batch_dynamic_info[len(self.added_questions)] += 1
-
             batch_question = self._build_batch_question(story, question)
             self.dataset.append(batch_question)
 
     def _process_question(self, question: SPARTUNQuestion, story: SPARTUNStory):
-        self.question_id = {} 
-        self.run_id_within_q = 0
-
         # Extracting objects from question
         obj1, obj2 = question.query
 
@@ -85,7 +76,7 @@ class TrainReader:
         self.added_questions = []
         self.reasoning_steps_from_target = self.upward_level
 
-        # Create question id of current answer not in question_id dict
+        # Create question id of current answer
         if current_key not in self.question_id:
             self.question_id[current_key] = self.run_id_within_q
             self.run_id_within_q += 1
@@ -98,6 +89,7 @@ class TrainReader:
 
     def _build_batch_question(self, story: SPARTUNStory, question: SPARTUNQuestion) -> list[tuple]:
         batch_question = []
+        print(self.added_questions, file=open("debug.txt", "a"))
         for added_question, label, question_key in self.added_questions[::-1]:
             batch_question.append(
                 (
@@ -164,6 +156,7 @@ class TrainReader:
             self.run_id_within_q += 1
 
         self.previous_ids.append(str(self.question_id[previous_key]))
+        self.added_questions.append(("", -1, previous_key))
 
     def _get_relation_type(self, question: SPARTUNQuestion, story: SPARTUNStory) -> str:
         size_relation = len(self.previous_ids)
@@ -174,7 +167,6 @@ class TrainReader:
         event_1 = question.query[0]
         event_2 = question.query[1]
         relation_type = story.facts_info[f"{event_1}:{event_2}"][question.answer[0]]["rule"].split(",")[0]
-        # relation_type = "symmetric" if size_relation == 1 else "transitive" if size_relation >= 2 else ""
         return relation_type + "," + ",".join(self.previous_ids)
 
     def _get_label(self, question: SPARTUNQuestion) -> str:
