@@ -284,6 +284,7 @@ def main(args):
         batch_size=args.batch_size,
         rule_text=args.text_rules,
     )
+    print(training_set, file=open("training_df.txt", "a"))
 
     test_file = "tb_dense_test.json"
 
