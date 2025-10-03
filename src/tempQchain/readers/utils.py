@@ -1,25 +1,6 @@
 from string import Template
 from types import MappingProxyType
 
-VOCABULARY = MappingProxyType(
-    {
-        "BEFORE": ["before"],
-        "RIGHT": ["to the right of"],
-        "ABOVE": ["above"],
-        "BELOW": ["below"],
-        "BEHIND": ["behind"],
-        "FRONT": ["in front of"],
-        "NEAR": ["near to"],
-        "FAR": ["far from"],
-        "DC": "disconnected from",
-        "EC": "touch[es]",
-        "PO": "overlap[s]",
-        "TPP": ["covered by"],
-        "NTPP": ["inside"],
-        "TPPI": ["cover[s]"],
-        "NTPPI": ["contain[s]"],
-    }
-)
 # TODO: Find the integers for the temporal labels
 LABELS_INT = MappingProxyType(
     {"BEFORE": 1, "AFTER": 2, "INCLUDES": 4, "IS INCLUDED": 8, "SIMULTANEOUS": 16, "VAGUE": 32}
