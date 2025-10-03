@@ -1,7 +1,7 @@
 import random
 
 from tempQchain.logger import get_logger
-from tempQchain.readers.data_models import SPARTUNQuestion, SPARTUNStory
+from tempQchain.readers.data_models import Question, Story
 from tempQchain.readers.utils import label_fr_to_int
 
 random.seed(42)
@@ -37,7 +37,7 @@ class TrainReader:
 
     def process_data(self) -> list[dict]:
         for story in self.data:
-            story = SPARTUNStory(**story)
+            story = Story(**story)
             self._process_story(story)
 
         logger.info(f"Original questions {self.count_original}")
@@ -45,7 +45,7 @@ class TrainReader:
 
         return self.dataset
 
-    def _process_story(self, story: SPARTUNStory) -> None:
+    def _process_story(self, story: Story) -> None:
         self.relation_info = {}
         self.question_id = {}
         self.run_id_within_q = 0
@@ -64,7 +64,7 @@ class TrainReader:
             batch_question = self._build_batch_question(story, question)
             self.dataset.append(batch_question)
 
-    def _process_question(self, question: SPARTUNQuestion, story: SPARTUNStory):
+    def _process_question(self, question: Question, story: Story):
         # Extracting objects from question
         obj1, obj2 = question.query
 
@@ -87,7 +87,7 @@ class TrainReader:
 
         self._process_reasoning_steps(target_question, story, question)
 
-    def _build_batch_question(self, story: SPARTUNStory, question: SPARTUNQuestion) -> list[tuple]:
+    def _build_batch_question(self, story: Story, question: Question) -> list[tuple]:
         batch_question = []
         print(self.added_questions, file=open("debug.txt", "a"))
         for added_question, label, question_key in self.added_questions[::-1]:
@@ -108,8 +108,8 @@ class TrainReader:
     def _process_reasoning_steps(
         self,
         target_question: tuple[str, str, str],
-        story: SPARTUNStory,
-        question: SPARTUNQuestion,
+        story: Story,
+        question: Question,
     ) -> None:
         current_level = [target_question]
         for step in range(self.reasoning_steps_from_target):
@@ -131,7 +131,7 @@ class TrainReader:
                 self.relation_info[current_key] = relation_type
 
     def _process_current_fact(
-        self, current_fact: tuple[str, str, str], story: SPARTUNStory
+        self, current_fact: tuple[str, str, str], story: Story
     ) -> tuple[list[list[str]], str]:
         current_key = self._create_key(*current_fact)
         fact_info_key = self._create_key(current_fact[0], current_fact[1], "")
@@ -148,7 +148,7 @@ class TrainReader:
             logger.warning(f"Key {fact_info_key} not found in story facts_info.")
             return [], current_key
 
-    def _create_question_from_previous_fact(self, previous_fact: list[str], story: SPARTUNStory) -> None:
+    def _create_question_from_previous_fact(self, previous_fact: list[str], story: Story) -> None:
         previous_key = self._create_key(*previous_fact)
 
         if previous_key not in self.question_id:
@@ -158,7 +158,7 @@ class TrainReader:
         self.previous_ids.append(str(self.question_id[previous_key]))
         self.added_questions.append(("", -1, previous_key))
 
-    def _get_relation_type(self, question: SPARTUNQuestion, story: SPARTUNStory) -> str:
+    def _get_relation_type(self, question: Question, story: Story) -> str:
         size_relation = len(self.previous_ids)
 
         if size_relation == 0:
@@ -169,11 +169,11 @@ class TrainReader:
         relation_type = story.facts_info[f"{event_1}:{event_2}"][question.answer[0]]["rule"].split(",")[0]
         return relation_type + "," + ",".join(self.previous_ids)
 
-    def _get_label(self, question: SPARTUNQuestion) -> str:
+    def _get_label(self, question: Question) -> str:
         """
         Returns the label for a given question based on its type.
         Args:
-            question (SPARTUNQuestion): The question object containing the answer.
+            question  Question): The question object containing the answer.
         Returns:
             str: The label extracted from the question's answer.
         """
