@@ -1,7 +1,6 @@
 from string import Template
 from types import MappingProxyType
 
-# TODO: Find the integers for the temporal labels
 LABELS_INT = MappingProxyType(
     {"BEFORE": 1, "AFTER": 2, "INCLUDES": 4, "IS INCLUDED": 8, "SIMULTANEOUS": 16, "VAGUE": 32}
 )
@@ -43,7 +42,7 @@ def get_temporal_question(relation: str) -> Template:
     return template
 
 
-def create_fr(event_pair, relation):
+def create_fr(event_pair: tuple[str, str], relation: str) -> tuple[str, list[str]]:
     # template = Template("What is the temporal relation between $event1 and $event2?")
     template = Template("When did $event1 happen in time compared to $event2?")
     q_text = template.substitute(event1=event_pair[0], event2=event_pair[1])
@@ -51,20 +50,3 @@ def create_fr(event_pair, relation):
     answer = [relation]
 
     return q_text, answer
-
-
-def create_yn(event_pair, relation, relation_set):
-    q_texts = []
-    answers = []
-
-    for r in relation_set:
-        template = get_temporal_question(r)
-
-        q_texts.append(template.substitute(event1=event_pair[0], event2=event_pair[1]))
-
-        if r.lower() == relation.lower():
-            answers.append(["Yes"])
-        else:
-            answers.append(["No"])
-
-    return q_texts, answers

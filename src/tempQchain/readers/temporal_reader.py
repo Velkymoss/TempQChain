@@ -8,6 +8,20 @@ from pydantic import BaseModel, field_validator
 from tempQchain.readers.utils import LABELS_INT, create_fr, get_temporal_question
 
 
+class IntermediateFact(BaseModel):
+    event1: str
+    event2: str
+    relation: str
+
+    @property
+    def key(self) -> str:
+        return f"{self.event1}:{self.event2}:{self.relation}"
+
+    @classmethod
+    def from_list(cls, fact_list: list[str]) -> IntermediateFact:
+        return cls(event1=fact_list[0], event2=fact_list[1], relation=fact_list[2])
+
+
 class BatchQuestion(BaseModel):
     question_text: str
     story_text: str
@@ -74,36 +88,32 @@ class Question(BaseModel):
     def query_str(self) -> str:
         return ":".join(self.query)
 
-    def get_reasoning_chain(self, facts_info: dict[str, dict]) -> tuple[list[tuple[str]], str]:
+    def get_reasoning_chain(self, facts_info: dict[str, dict]) -> tuple[list[IntermediateFact], str]:
         facts_data = facts_info[self.query_str][self.asked_relation]
         previous_facts = facts_data["previous"]
-        intermediate_facts = [tuple(fact) for fact in previous_facts]
+        intermediate_facts = [IntermediateFact.from_list(fact) for fact in previous_facts]
         constraint = facts_data["rule"].split(",")[0]
         return intermediate_facts, constraint
 
     def create_intermediate_question(
-        self, story: Story, intermediate_fact: tuple[str, str, str], id: int
+        self, story: Story, intermediate_fact: IntermediateFact, id: int
     ) -> tuple[str, BatchQuestion]:
-        relation = intermediate_fact[2]
-        event1 = intermediate_fact[0]
-        event2 = intermediate_fact[1]
         if self.q_type == "FR":
-            question, _ = create_fr((event1, event2), relation)
+            question, _ = create_fr((intermediate_fact.event1, intermediate_fact.event2), intermediate_fact.relation)
         else:
-            template = get_temporal_question(relation)
-            question = template.substitute(event1=event1, event2=event2)
+            template = get_temporal_question(intermediate_fact.relation)
+            question = template.substitute(event1=intermediate_fact.event1, event2=intermediate_fact.event2)
 
-        key = f"{event1}:{event2}:{relation}"
         batch_question = BatchQuestion(
             question_text=question,
             story_text=story.story_text,
             q_type=self.q_type,
             candidate_answers=self.candidate_answers,
             relation_info="",
-            answer=relation,
+            answer=intermediate_fact.relation,
             question_id=id,
         )
-        return key, batch_question
+        return intermediate_fact.key, batch_question
 
     def create_batch_questions(
         self,
@@ -111,7 +121,6 @@ class Question(BaseModel):
         id: int,
         question_id_map: dict[str, int],
     ) -> tuple[list[BatchQuestion], list[str], int]:
-
         if self.query_str not in story.facts_info or self.asked_relation not in story.facts_info[self.query_str]:
             question_id_map[self.unique_id] = id
             target_question = BatchQuestion(
@@ -134,12 +143,11 @@ class Question(BaseModel):
         relation_info = constraint
 
         for fact in intermediate_facts:
-            key = ":".join(fact)
-            if key in question_id_map:
-                intermediate_ids.append(question_id_map[key])
+            if fact.key in question_id_map:
+                intermediate_ids.append(question_id_map[fact.key])
             else:
                 intermediate_ids.append(next_id)
-                question_id_map[key] = next_id
+                question_id_map[fact.key] = next_id
                 key, intermediate_question = self.create_intermediate_question(story, fact, next_id)
                 questions.append(intermediate_question)
                 keys.append(key)
@@ -189,24 +197,21 @@ class Story(BaseModel):
         relation_info = [constraint]
         next_id = batch_counter
 
-        for i, fact in enumerate(intermediate_facts):
-            key = ":".join(fact)
-
+        for fact in intermediate_facts:
             # intermediate question already in batch
-            if key in question_id_map:
-                relation_info.append(str(question_id_map[key]))
-
+            if fact.key in question_id_map:
+                relation_info.append(str(question_id_map[fact.key]))
             else:
                 _, intermediate_question = question.create_intermediate_question(self, fact, next_id)
-                question_id_map[key] = next_id
-                to_add[key] = intermediate_question
+                question_id_map[fact.key] = next_id
+                to_add[fact.key] = intermediate_question
                 relation_info.append(str(next_id))
                 next_id += 1
 
-        relation_info = ",".join(relation_info)
+        relation_info_str = ",".join(relation_info)
 
         # update existing question with relation_info
-        updated_target = existing_question.model_copy(update={"relation_info": relation_info})
+        updated_target = existing_question.model_copy(update={"relation_info": relation_info_str})
         to_add[question.unique_id] = updated_target
 
         return to_add, next_id
@@ -296,19 +301,16 @@ class Dataset:
             return dataset.convert_to_domiknows_format(use_int_labels=use_int_labels)
         return dataset
 
-        
     def get_statistics(self) -> dict[str, Any]:
         if not self.batches:
             return {}
         total_questions = sum(len(batch) for batch in self.batches)
         batch_sizes = [len(batch) for batch in self.batches]
-        
+
         questions_with_chains = sum(
-            1 for batch in self.batches 
-            for q in batch 
-            if q.relation_info and q.relation_info.count(',') > 0
+            1 for batch in self.batches for q in batch if q.relation_info and q.relation_info.count(",") > 0
         )
-        
+
         return {
             "num_batches": len(self.batches),
             "total_questions": total_questions,
@@ -318,18 +320,21 @@ class Dataset:
             "questions_with_chains": questions_with_chains,
             "intermediate_questions": total_questions - questions_with_chains,
         }
-    
+
     def __len__(self) -> int:
         """Return number of total questions."""
         return sum(len(batch) for batch in self.batches) if self.batches else 0
-    
+
     def __repr__(self) -> str:
-        return f"Dataset(batches={len(self.batches)}, question_type='{self.question_type}', batch_size={self.batch_size})"
+        return (
+            f"Dataset(batches={len(self.batches)}, question_type='{self.question_type}', batch_size={self.batch_size})"
+        )
 
 
 if __name__ == "__main__":
+    question_type = "FR"
     dataset = Dataset.from_file(
-        file_path="data/tb_dense_train.json", question_type="FR", batch_size=64, domiknows_format=False
+        file_path="data/tb_dense_train.json", question_type=question_type, batch_size=8, domiknows_format=False
     )
     print(dataset)
     print(dataset.get_statistics())
