@@ -9,7 +9,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, precisio
 
 from tempQchain.logger import get_logger
 from tempQchain.programs.Program_tb_dense_YN import program_declaration
-from tempQchain.readers.file_loaders import DomiKnowS_reader
+from tempQchain.readers.temporal_reader import TemporalReader
 
 logger = get_logger(__name__)
 
@@ -228,60 +228,19 @@ def main(args):
         else:
             cur_device = "cpu"
 
-    train_file = "tb_dense.json"
-
-    file_path = (
-        os.path.join(args.data_path, train_file)
-        if isinstance(train_file, str)
-        else [os.path.join(args.data_path, file_name) for file_name in train_file]
+    train_file = "tb_dense_train.json"
+    training_set = TemporalReader.from_file(
+        file_path=os.path.join(args.data_path, train_file), question_type="YN", batch_size=args.batch_size
     )
 
-    training_set = DomiKnowS_reader(
-        file_path,
-        "YN",
-        type_dataset=args.train_file.upper(),
-        size=args.train_size,
-        upward_level=8,
-        augmented=args.use_chains,
-        batch_size=args.batch_size,
-        rule_text=args.text_rules,
-        reasoning_steps=None if args.reasoning_steps == -1 else args.reasoning_steps,
+    test_file = "tb_dense_test.json"
+    testing_set = TemporalReader.from_file(
+        file_path=os.path.join(args.data_path, test_file), question_type="YN", batch_size=args.batch_size
     )
 
-    test_file = "test.json"
-
-    file_path = (
-        os.path.join(args.data_path, test_file)
-        if isinstance(test_file, str)
-        else [os.path.join(args.data_path, file_name) for file_name in test_file]
-    )
-    testing_set = DomiKnowS_reader(
-        file_path,
-        "YN",
-        type_dataset=args.train_file.upper(),
-        size=args.test_size,
-        augmented=False,
-        batch_size=args.batch_size,
-        rule_text=args.text_rules,
-        reasoning_steps=None if args.reasoning_steps == -1 else args.reasoning_steps,
-    )
-
-    eval_file = "dev.json"
-
-    file_path = (
-        os.path.join(args.data_path, eval_file)
-        if isinstance(eval_file, str)
-        else [os.path.join(args.data_path, file_name) for file_name in eval_file]
-    )
-    eval_set = DomiKnowS_reader(
-        file_path,
-        "YN",
-        type_dataset=args.train_file.upper(),
-        size=args.test_size,
-        augmented=False,
-        batch_size=args.batch_size,
-        rule_text=args.text_rules,
-        reasoning_steps=None if args.reasoning_steps == -1 else args.reasoning_steps,
+    eval_file = "tb_dense_dev.json"
+    eval_set = TemporalReader.from_file(
+        file_path=os.path.join(args.data_path, eval_file), question_type="YN", batch_size=args.batch_size
     )
 
     program_name = "PMD" if args.pmd else "Sampling" if args.sampling else "Base"

@@ -69,22 +69,3 @@ def convert_to_tuples(batch_dict):
             labels[i]
         ))
     return batch_tuples
-
-
-if __name__ == "__main__":
-    import json
-    
-    # Save as JSON (easier to inspect)
-    with open("dummy_transitive_dataset.json", "w") as f:
-        json.dump(dummy_train_data, f, indent=2)
-    
-    print(f"Created dummy dataset with {len(dummy_train_data)} batches")
-    print("\nBatch 1 (simple transitive chain):")
-    print(f"  question_ids: {dummy_train_data[0]['question_ids']}")
-    print(f"  relation: {dummy_train_data[0]['relation']}")
-    print("  -> Q2 should be transitive(Q0, Q1)")
-    
-    print("\nBatch 3 (chained transitive):")
-    print(f"  question_ids: {dummy_train_data[2]['question_ids']}")
-    print(f"  relation: {dummy_train_data[2]['relation']}")
-    print("  -> Q2=trans(Q0,Q1), Q4=trans(Q2,Q3)")

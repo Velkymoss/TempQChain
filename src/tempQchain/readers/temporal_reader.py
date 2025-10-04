@@ -82,13 +82,19 @@ class Question(BaseModel):
 
     @property
     def unique_id(self) -> str:
-        return ":".join(self.query_str) + ":" + self.asked_relation.lower()
+        return self.query_str + ":" + self.asked_relation.lower()
 
     @property
     def query_str(self) -> str:
         return ":".join(self.query)
 
     def get_reasoning_chain(self, facts_info: dict[str, dict]) -> tuple[list[IntermediateFact], str]:
+        if self.query_str not in facts_info:
+            return [], ""
+
+        if self.asked_relation not in facts_info[self.query_str]:
+            return [], ""
+
         facts_data = facts_info[self.query_str][self.asked_relation]
         previous_facts = facts_data["previous"]
         intermediate_facts = [IntermediateFact.from_list(fact) for fact in previous_facts]
@@ -194,6 +200,10 @@ class Story(BaseModel):
 
         # create reasoning chain
         intermediate_facts, constraint = question.get_reasoning_chain(self.facts_info)
+
+        if not intermediate_facts or not constraint:
+            return {}, batch_counter
+
         relation_info = [constraint]
         next_id = batch_counter
 
@@ -218,6 +228,24 @@ class Story(BaseModel):
 
     def create_batches_for_story(self, batch_size: int, question_type: str) -> list[list[BatchQuestion]]:
         batches = []
+
+        if batch_size == 1:
+            for question in self.questions:
+                if question.q_type != question_type:
+                    continue
+
+                target_question = BatchQuestion(
+                    question_text=question.question,
+                    story_text=self.story_text,
+                    q_type=question.q_type,
+                    candidate_answers=question.candidate_answers,
+                    relation_info="",
+                    answer=question.answer,
+                    question_id=0,
+                )
+                batches.append([target_question])
+            return batches
+
         current_batch = {}
         # reset map for each batch
         question_id_map = {}
@@ -258,7 +286,7 @@ class Story(BaseModel):
         return batches
 
 
-class Dataset:
+class TemporalReader:
     def __init__(self, data: list[dict], question_type: str, batch_size: int):
         self.data = data
         self.question_type = question_type
@@ -292,7 +320,7 @@ class Dataset:
         batch_size: int,
         domiknows_format: bool = True,
         use_int_labels: bool = True,
-    ) -> Dataset | list[dict[str, str]]:
+    ) -> TemporalReader | list[dict[str, str]]:
         with open(file_path, "r") as f:
             file = json.load(f)
         dataset = cls(data=file["data"], question_type=question_type, batch_size=batch_size)
@@ -333,8 +361,10 @@ class Dataset:
 
 if __name__ == "__main__":
     question_type = "FR"
-    dataset = Dataset.from_file(
-        file_path="data/tb_dense_train.json", question_type=question_type, batch_size=8, domiknows_format=False
+    split = "train"
+
+    dataset = TemporalReader.from_file(
+        file_path=f"data/tb_dense_{split}.json", question_type=question_type, batch_size=8, domiknows_format=False
     )
     print(dataset)
     print(dataset.get_statistics())

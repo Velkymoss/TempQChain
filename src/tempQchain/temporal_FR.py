@@ -13,7 +13,7 @@ from tempQchain.programs.program_tb_dense_FR import (
     program_declaration_tb_dense_fr_T5_v2,
     program_declaration_tb_dense_fr_T5_v3,
 )
-from tempQchain.readers.file_loaders import DomiKnowS_reader
+from tempQchain.readers.temporal_reader import TemporalReader
 
 logger = get_logger(__name__)
 
@@ -273,46 +273,18 @@ def main(args):
         )
 
     train_file = "tb_dense_train.json"
-
-    training_set = DomiKnowS_reader(
-        os.path.join(args.data_path, train_file),
-        "FR",
-        type_dataset=args.train_file.upper(),
-        size=args.train_size,
-        upward_level=12,
-        augmented=args.use_chains,
-        batch_size=args.batch_size,
-        rule_text=args.text_rules,
+    training_set = TemporalReader.from_file(
+        file_path=os.path.join(args.data_path, train_file), question_type="FR", batch_size=args.batch_size
     )
 
-    # from tempQchain.train import dummy_train_data
-
-    # training_set = dummy_train_data
-
-    print(training_set, file=open("training_df.txt", "a"))
-
     test_file = "tb_dense_test.json"
-
-    testing_set = DomiKnowS_reader(
-        os.path.join(args.data_path, test_file),
-        "FR",
-        type_dataset=args.train_file.upper(),
-        size=args.test_size,
-        augmented=False,
-        batch_size=args.batch_size,
-        rule_text=args.text_rules,
+    testing_set = TemporalReader.from_file(
+        file_path=os.path.join(args.data_path, test_file), question_type="FR", batch_size=args.batch_size
     )
 
     eval_file = "tb_dense_dev.json"
-
-    eval_set = DomiKnowS_reader(
-        os.path.join(args.data_path, eval_file),
-        "FR",
-        type_dataset=args.train_file.upper(),
-        size=args.test_size,
-        augmented=False,
-        batch_size=args.batch_size,
-        rule_text=args.text_rules,
+    eval_set = TemporalReader.from_file(
+        file_path=os.path.join(args.data_path, eval_file), question_type="FR", batch_size=args.batch_size
     )
 
     program_name = "PMD" if args.pmd else "Sampling" if args.sampling else "Base"
@@ -348,22 +320,9 @@ def main(args):
                     "cuda:5": cur_device,
                 },
             )
-        if args.test_each:
-            for i in range(10):
-                logger.info("Testing {:} steps".format(i))
-                testing_set = DomiKnowS_reader(
-                    os.path.join(args.results_path, test_file),
-                    "FR",
-                    type_dataset=args.train_file.upper(),
-                    size=args.test_size,
-                    augmented=False,
-                    batch_size=args.batch_size,
-                    rule_text=args.text_rules,
-                    reasoning_steps=i,
-                )
-                eval(program, testing_set, cur_device, args, print_result=True)
-        else:
-            eval(program, testing_set, cur_device, args, print_result=True)
+
+        eval(program, testing_set, cur_device, args, print_result=True)
+
     elif args.loaded_train:
         if args.model_change:
             pretrain_model = torch.load(
