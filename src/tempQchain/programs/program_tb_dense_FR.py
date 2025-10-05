@@ -1,3 +1,5 @@
+from typing import NamedTuple
+
 import torch
 from domiknows.program import SolverPOIProgram
 from domiknows.program.loss import NBCrossEntropyLoss
@@ -49,6 +51,36 @@ logger = get_logger(__name__)
 LABEL_DIM = 6
 
 
+class QuestionData(NamedTuple):
+    """
+    Output of make_questions().
+
+    Attributes:
+        story_contain (torch.Tensor): Shape: (batch_size, 1).
+        questions (list[str]): List of question strings.
+        stories (list[str]): List of story strings.
+        relations (list[str]): List of relation strings associated with the questions.
+        ids (torch.LongTensor): Tensor of ids for each question.
+        after_labels (torch.LongTensor): Tensor of labels indicating 'after' relations.
+        before_labels (torch.LongTensor): Tensor of labels indicating 'before' relations.
+        includes_labels (torch.LongTensor): Tensor of labels indicating 'includes' relations.
+        is_included_labels (torch.LongTensor): Tensor of labels indicating 'is included' relations.
+        simultaneous_labels (torch.LongTensor): Tensor of labels indicating 'simultaneous' relations.
+        vague_labels (torch.LongTensor): Tensor of labels indicating 'vague' relations.
+    """
+    story_contain: torch.Tensor  # shape: (batch_size, 1)
+    questions: list[str]
+    stories: list[str]
+    relations: list[str]
+    ids: torch.LongTensor
+    after_labels: torch.LongTensor
+    before_labels: torch.LongTensor
+    includes_labels: torch.LongTensor
+    is_included_labels: torch.LongTensor
+    simultaneous_labels: torch.LongTensor
+    vague_labels: torch.LongTensor
+
+
 def program_declaration_tb_dense_fr(
     device: torch.device,
     *,
@@ -77,8 +109,19 @@ def program_declaration_tb_dense_fr(
         "vague",
     ]
 
-    def make_labels(label_list):
-        print("make_labels input:", label_list)
+    def make_labels(label_list: str) -> list[torch.LongTensor]:
+        """
+        input(str): concatenated  batch labels
+        example input: "4@@8@@16@@8@@2@@2@@2@@2"
+
+        output(list[torch.LongTensor]): batch label matrix (label-dim x batch-siz)
+        example output: [tensor([0, 0, 0, 0, 0, 0, 0, 0]),
+                         tensor([0, 0, 0, 0, 1, 1, 1, 1]),
+                         tensor([1, 0, 0, 0, 0, 0, 0, 0]),
+                         tensor([0, 1, 0, 1, 0, 0, 0, 0]),
+                         tensor([0, 0, 1, 0, 0, 0, 0, 0]),
+                         tensor([0, 0, 0, 0, 0, 0, 0, 0])]
+        """
         labels = label_list.split("@@")
         all_labels_list = [[] for _ in range(LABEL_DIM)]
         for bits_label in labels:
@@ -91,7 +134,7 @@ def program_declaration_tb_dense_fr(
         # label_nums = [0 if label == "Yes" else 1 if label == "No" else 2 for label in labels]
         return [to_int_list(labels_list) for labels_list in all_labels_list]
 
-    def make_question(questions, stories, relations, q_ids, labels):
+    def make_question(questions: str, stories: str, relations: str, q_ids: str, labels: str) -> QuestionData:
         all_labels = make_labels(labels)
         ids = to_int_list(q_ids.split("@@"))
         (
@@ -103,32 +146,18 @@ def program_declaration_tb_dense_fr(
             vague_list,
         ) = all_labels
 
-        print(
-            torch.ones(len(questions.split("@@")), 1),
-            questions.split("@@"),
-            stories.split("@@"),
-            relations.split("@@"),
-            ids,
-            after_list,
-            before_list,
-            includes_list,
-            is_included_list,
-            simultaneous_list,
-            vague_list,
-        )
-
-        return (
-            torch.ones(len(questions.split("@@")), 1),
-            questions.split("@@"),
-            stories.split("@@"),
-            relations.split("@@"),
-            ids,
-            after_list,
-            before_list,
-            includes_list,
-            is_included_list,
-            simultaneous_list,
-            vague_list,
+        return QuestionData(
+            story_contain=torch.ones(len(questions.split("@@")), 1),
+            questions=questions.split("@@"),
+            stories=stories.split("@@"),
+            relations=relations.split("@@"),
+            ids=ids,
+            after_labels=after_list,
+            before_labels=before_list,
+            includes_labels=includes_list,
+            is_included_labels=is_included_list,
+            simultaneous_labels=simultaneous_list,
+            vague_labels=vague_list,
         )
 
     question[
