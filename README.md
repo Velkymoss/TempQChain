@@ -53,45 +53,6 @@ q-chain temporal-fr [OPTIONS]
 q-chain temporal-yn [OPTIONS]
 ```
 
-## Command Options
-
-### Training Parameters
-- `--epoch INT`: Number of training epochs
-- `--lr FLOAT`: Learning rate
-- `--batch-size INT`: Batch size for training
-- `--check-epoch INT`: Check evaluation every N epochs
-
-### Data Parameters
-- `--data-path PATH`: Path to the data folder (default: "data/")
-- `--results-path PATH`: Path to save models and predictions (default: "models/")
-- `--train-file TEXT`: Training file option: Temp, Origin, SpaRTUN or Human (default: "TEMP")
-- `--test-file TEXT`: Test file option: Temp, Origin, SpaRTUN or Human (default: "TEMP")
-- `--train-size INT`: Training dataset size
-- `--test-size INT`: Test dataset size
-
-### Model Parameters
-- `--model TEXT`: Model type to use (bert, roberta, t5-adapter)
-- `--dropout`: Enable dropout
-- `--constraints`: Enable constraints
-
-### Training Methods
-- `--pmd`: Use Primal Dual method
-- `--beta FLOAT`: Beta parameter for PMD (default: 0.5)
-- `--sampling`: Use sampling loss
-
-- `--sampling-size INT`: Sampling size (default: 1)
-
-### Additional Options
-- `--use-chains`: Use chains for data augmentation
-- `--text-rules`: Include rules as text
-- `--cuda INT`: CUDA device number (-1 for CPU, default: 0)
-
-### Model Loading/Saving
-- `--loaded`: Load and evaluate existing model
-- `--loaded-file TEXT`: File name to load model from
-- `--save`: Save the trained model
-- `--save-file TEXT`: File name to save model
-
 ## Tests
 
 ```bash
