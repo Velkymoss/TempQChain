@@ -18,7 +18,7 @@ from tempQchain.readers.temporal_reader import TemporalReader
 logger = get_logger(__name__)
 
 
-def eval(program, testing_set, cur_device, args, print_result=False, multilabel=False):
+def eval(program, testing_set, cur_device, args, print_result=True, multilabel=False):
     from tempQchain.graphs.graph_tb_dense_FR import (
         after,
         before,
@@ -96,7 +96,8 @@ def eval(program, testing_set, cur_device, args, print_result=False, multilabel=
     accuracy = correct / total
 
     if print_result:
-        result_file = open(os.path.join(args.results_path, "result.txt"), "a")
+        os.makedirs(args.results_path, exist_ok=True)
+    with open(os.path.join(args.results_path, "result.txt"), "a") as result_file:
         print(
             "Program:",
             "Primal Dual" if args.pmd else "Sampling Loss" if args.sampling else "DomiKnowS",
