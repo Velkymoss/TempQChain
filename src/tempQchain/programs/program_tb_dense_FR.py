@@ -78,6 +78,7 @@ def program_declaration_tb_dense_fr(
     ]
 
     def make_labels(label_list):
+        print("make_labels input:", label_list)
         labels = label_list.split("@@")
         all_labels_list = [[] for _ in range(LABEL_DIM)]
         for bits_label in labels:
@@ -101,6 +102,21 @@ def program_declaration_tb_dense_fr(
             simultaneous_list,
             vague_list,
         ) = all_labels
+
+        print(
+            torch.ones(len(questions.split("@@")), 1),
+            questions.split("@@"),
+            stories.split("@@"),
+            relations.split("@@"),
+            ids,
+            after_list,
+            before_list,
+            includes_list,
+            is_included_list,
+            simultaneous_list,
+            vague_list,
+        )
+
         return (
             torch.ones(len(questions.split("@@")), 1),
             questions.split("@@"),

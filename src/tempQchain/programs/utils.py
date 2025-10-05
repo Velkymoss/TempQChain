@@ -46,9 +46,11 @@ def check_transitive(arg11: DataNode, arg22: DataNode, arg33: DataNode) -> bool:
         return False
     # exmple of relation_describe: ['transitive', '1', '4']
     relation_describe = relation_arg3.split(",")
+    print("Checking transitive:", relation_describe)
     if relation_describe[0] == "transitive":
         qid1 = arg11.getAttribute("id").item()
         qid2 = arg22.getAttribute("id").item()
+        print("Transitive relation found: ", qid1, qid2)
         if qid1 == int(relation_describe[1]) and qid2 == int(relation_describe[2]):
             return True
     return False
