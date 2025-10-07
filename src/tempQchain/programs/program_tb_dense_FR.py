@@ -131,7 +131,6 @@ def program_declaration_tb_dense_fr(
                 all_labels_list[ind].append(1 if bits_label & cur_label else 0)
                 cur_label *= 2
 
-        # label_nums = [0 if label == "Yes" else 1 if label == "No" else 2 for label in labels]
         return [to_int_list(labels_list) for labels_list in all_labels_list]
 
     def make_question(questions: str, stories: str, relations: str, q_ids: str, labels: str) -> QuestionData:

@@ -54,10 +54,17 @@ q-chain temporal-yn [OPTIONS]
 ```
 
 ## Tests
+### Unit Tests
 
 ```bash
 uv run pytest
 ```
+### Graph Tests
+Graph tests must run in isolation due to side effects.
+```bash
+uv run python tests/graphs/run_tests.py
+```
+
 ## Known Issues
 
 ### DomiKnows Library Bug Fix
