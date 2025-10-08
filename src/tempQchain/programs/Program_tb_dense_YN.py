@@ -1,3 +1,5 @@
+from typing import Sequence
+
 import torch
 from domiknows.program import SolverPOIProgram
 from domiknows.program.loss import NBCrossEntropyLoss
@@ -12,9 +14,6 @@ from tempQchain.graphs.graph_tb_dense_YN import (
     answer_class,
     graph,
     question,
-    r_quest1,
-    r_quest2,
-    reverse,
     s_quest1,
     s_quest2,
     story,
@@ -36,7 +35,7 @@ from tempQchain.programs.models import (
     RoBERTaTokenizer,
     T5Tokenizer,
 )
-from tempQchain.programs.utils import check_reverse, check_symmetric, check_transitive
+from tempQchain.programs.utils import check_symmetric, check_transitive
 
 logger = get_logger(__name__)
 
@@ -50,17 +49,28 @@ def program_declaration(
     story["question_ids"] = ReaderSensor(keyword="question_ids")
     story["labels"] = ReaderSensor(keyword="labels")
 
-    def str_to_int_list(x):
+    def str_to_int_list(x: Sequence) -> torch.LongTensor:
         return torch.LongTensor([int(i) for i in x])
 
-    def make_labels(label_list):
+    def make_labels(label_list: str) -> torch.LongTensor:
         labels = label_list.split("@@")
         label_nums = [0 if label == "Yes" else 1 if label == "No" else 2 for label in labels]
         return str_to_int_list(label_nums)
 
-    def make_question(questions, stories, relations, q_ids, labels):
+    def make_question(
+        questions: str, stories: str, relations: str, q_ids: str, labels: str
+    ) -> tuple[torch.Tensor, list[str], list[str], list[str], torch.LongTensor, torch.LongTensor]:
         num_labels = make_labels(labels)
         ids = str_to_int_list(q_ids.split("@@"))
+
+        print(
+            torch.ones(len(questions.split("@@")), 1),
+            questions.split("@@"),
+            stories.split("@@"),
+            relations.split("@@"),
+            ids,
+            num_labels,
+        )
         return (
             torch.ones(len(questions.split("@@")), 1),
             questions.split("@@"),
@@ -84,6 +94,7 @@ def program_declaration(
         return label
 
     question[answer_class] = FunctionalSensor(story_contain, "label", forward=read_label, label=True, device=cur_device)
+
     logger.info("Using the {:} as the baseline model".format(model))
 
     if model == "roberta":
@@ -119,17 +130,13 @@ def program_declaration(
             relations=(s_quest1.reversed, s_quest2.reversed), forward=check_symmetric, device=cur_device
         )
 
-        reverse[r_quest1.reversed, r_quest2.reversed] = CompositionCandidateSensor(
-            relations=(r_quest1.reversed, r_quest2.reversed), forward=check_reverse, device=cur_device
-        )
-
         transitive[t_quest1.reversed, t_quest2.reversed, t_quest3.reversed] = CompositionCandidateSensor(
             relations=(t_quest1.reversed, t_quest2.reversed, t_quest3.reversed),
             forward=check_transitive,
             device=cur_device,
         )
 
-        poi_list.extend([symmetric, reverse, transitive])
+        poi_list.extend([symmetric, transitive])
 
     infer_list = ["local/argmax"]  # ['ILP', 'local/argmax']
     if pmd:

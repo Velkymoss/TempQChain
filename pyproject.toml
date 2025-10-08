@@ -28,8 +28,7 @@ dependencies = [
 
 [project.scripts]
 q-chain = "tempQchain.main:app"
-temporal-fr = "tempQchain.main:temporal_fr_cli"
-temporal-yn = "tempQchain.main:temporal_yn_cli"
+
 
 [tool.pytest.ini_options]
 minversion = "6.0"
