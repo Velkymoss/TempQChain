@@ -2,9 +2,11 @@ import subprocess
 import sys
 
 TEST_FILES = [
-    "tests/graphs/test_transitive_determin.py",
-    "tests/graphs/test_symmetric.py",
-    "tests/graphs/test_transitive_non_determin.py",
+    "tests/graphs/fr/test_transitive_determin.py",
+    "tests/graphs/fr/test_symmetric.py",
+    "tests/graphs/fr/test_transitive_non_determin.py",
+    "tests/graphs/yn/test_transitive.py",
+    "tests/graphs/yn/test_symmetric.py",
 ]
 
 
@@ -15,7 +17,7 @@ def run_test(test_file: str) -> bool:
     print()
 
     result = subprocess.run(
-        ["uv", "run", "pytest", test_file, "-v"],
+        [sys.executable, "-m", "pytest", test_file, "-v"],
         capture_output=False,
     )
 

@@ -50,7 +50,8 @@ markers = [
 ]
 pythonpath = [
     ".",
-    "src"
+    "src",
+    "tests"
 ]
 
 [tool.coverage.run]

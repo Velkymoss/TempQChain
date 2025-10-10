@@ -62,15 +62,6 @@ def program_declaration(
     ) -> tuple[torch.Tensor, list[str], list[str], list[str], torch.LongTensor, torch.LongTensor]:
         num_labels = make_labels(labels)
         ids = str_to_int_list(q_ids.split("@@"))
-
-        print(
-            torch.ones(len(questions.split("@@")), 1),
-            questions.split("@@"),
-            stories.split("@@"),
-            relations.split("@@"),
-            ids,
-            num_labels,
-        )
         return (
             torch.ones(len(questions.split("@@")), 1),
             questions.split("@@"),

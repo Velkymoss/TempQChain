@@ -1,16 +1,16 @@
 import torch
-from conftest import (
-    DummyLearner,
-    QuestionSpecificDummyLearner,
-    assert_ilp_result,
-    assert_local_softmax,
-    check_transitive,
-    make_question,
-)
 from domiknows.program import SolverPOIProgram
 from domiknows.sensor.pytorch.relation_sensors import CompositionCandidateSensor
 from domiknows.sensor.pytorch.sensors import JointSensor, ReaderSensor
-from graph_fr import get_graph
+
+from tests.graphs.conftest import assert_local_softmax, check_transitive
+from tests.graphs.fr.conftest import (
+    DummyLearner,
+    QuestionSpecificDummyLearner,
+    assert_ilp_result,
+    make_question,
+)
+from tests.graphs.fr.graph_fr import get_graph
 
 
 def test_transitive_determin():

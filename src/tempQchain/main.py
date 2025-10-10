@@ -5,7 +5,6 @@ app = typer.Typer(help="TempQChain CLI")
 
 @app.command()
 def create_tb_dense(
-    # Data processing parameters
     save_rules: bool = typer.Option(False, help="Save transitivity rules to file"),
 ):
     """Process TB-Dense data and create training/dev/test splits."""
