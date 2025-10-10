@@ -1,11 +1,22 @@
 import os
 import random
+import warnings
 
 import numpy as np
 import torch
 import tqdm
 import transformers
+from domiknows.program.model.base import Mode
+from sklearn.metrics import accuracy_score, f1_score
 
+from tempQchain.graphs.graph_tb_dense_FR import (
+    after,
+    before,
+    includes,
+    is_included,
+    simultaneous,
+    vague,
+)
 from tempQchain.logger import get_logger
 from tempQchain.programs.program_tb_dense_FR import (
     program_declaration_tb_dense_fr,
@@ -15,19 +26,12 @@ from tempQchain.programs.program_tb_dense_FR import (
 )
 from tempQchain.readers.temporal_reader import TemporalReader
 
+warnings.filterwarnings("ignore")
+
 logger = get_logger(__name__)
 
 
-def eval(program, testing_set, cur_device, args, print_result=True, multilabel=False):
-    from tempQchain.graphs.graph_tb_dense_FR import (
-        after,
-        before,
-        includes,
-        is_included,
-        simultaneous,
-        vague,
-    )
-
+def eval(program, testing_set, cur_device, args):
     all_labels = [
         before,
         after,
@@ -46,22 +50,23 @@ def eval(program, testing_set, cur_device, args, print_result=True, multilabel=F
         "vague",
     ]
 
-    def remove_opposite(ind1, ind2, result_set, result_list):
-        if ind1 in pred_set and ind2 in pred_set:
-            if result_list[ind1] > result_list[ind2]:
-                result_set.remove(ind2)
-            else:
-                result_set.remove(ind1)
+    # def remove_opposite(ind1, ind2, result_set, result_list):
+    #     if ind1 in pred_set and ind2 in pred_set:
+    #         if result_list[ind1] > result_list[ind2]:
+    #             result_set.remove(ind2)
+    #         else:
+    #             result_set.remove(ind1)
 
     pred_list = []
-    correct = 0
-    total = 0
     pred_set = set()
+
+    all_true = []
+    all_pred = []
+
     for datanode in tqdm.tqdm(program.populate(testing_set, device=cur_device), "Checking accuracy"):
         for question in datanode.getChildDataNodes():
             pred_set.clear()
             pred_list.clear()
-            total += 1
             # Getting predict label
             for ind, label in enumerate(all_labels):
                 pred = question.getAttribute(label, "local/softmax")
@@ -69,12 +74,9 @@ def eval(program, testing_set, cur_device, args, print_result=True, multilabel=F
                     pred_set.add(ind)
                 pred_list.append(pred[1].item())
 
-            remove_opposite(0, 1, pred_set, pred_list)
-            remove_opposite(2, 3, pred_set, pred_list)
-            remove_opposite(4, 5, pred_set, pred_list)
-            remove_opposite(6, 7, pred_set, pred_list)
-            remove_opposite(8, 9, pred_set, pred_list)
-            accuracy_check = True
+            # remove_opposite(0, 1, pred_set, pred_list)
+            # remove_opposite(2, 3, pred_set, pred_list)
+            # remove_opposite(4, 5, pred_set, pred_list)
             # Getting acutal label
             # if args.model == "t5-adapter":
             #     expected_text = question.getAttribute("text_labels")
@@ -87,40 +89,38 @@ def eval(program, testing_set, cur_device, args, print_result=True, multilabel=F
             #                 pred_text += label if not pred_text else (", " + label)
             #     correct += int(expected_text.strip() == pred_text.strip())
             # else:
+            true_labels = []
+            pred_labels = []
             for ind, label_ind in enumerate(all_labels):
                 label = question.getAttribute(label_ind, "label").item()
                 pred = 1 if ind in pred_set else 0
-                accuracy_check = accuracy_check and label == pred
-            if accuracy_check:
-                correct += 1
-    accuracy = correct / total
+                true_labels.append(label)
+                pred_labels.append(pred)
+                
+            all_true.append(true_labels)
+            all_pred.append(pred_labels)
+        
+    accuracy = accuracy_score(all_true, all_pred)
+    f1 = f1_score(all_true, all_pred, average="weighted")
 
-    if print_result:
-        os.makedirs(args.results_path, exist_ok=True)
-    with open(os.path.join(args.results_path, "result.txt"), "a") as result_file:
-        print(
-            "Program:",
-            "Primal Dual" if args.pmd else "Sampling Loss" if args.sampling else "DomiKnowS",
-            file=result_file,
-        )
-        if not args.loaded:
-            print("Training info", file=result_file)
-            print("Batch Size:", args.batch_size, file=result_file)
-            print("Epoch:", args.epoch, file=result_file)
-            print("Learning Rate:", args.lr, file=result_file)
-            print("Beta:", args.beta, file=result_file)
-            print("Sampling Size:", args.sampling_size, file=result_file)
-        else:
-            print("Loaded Model Name:", args.loaded_file, file=result_file)
-        print("Evaluation File:", args.test_file, file=result_file)
+    logger.info(f"Program: {'Primal Dual' if args.pmd else 'Sampling Loss' if args.sampling else 'DomiKnowS'}")
+    if not args.loaded:
+        logger.info("Training info")
+        logger.info(f"Batch Size: {args.batch_size}")
+        logger.info(f"Epoch: {args.epoch}")
+        logger.info(f"Learning Rate: {args.lr}")
+        logger.info(f"Beta: {args.beta}")
+        logger.info(f"Sampling Size: {args.sampling_size}")
+    else:
+        logger.info(f"Loaded Model Name: {args.loaded_file}")
+    logger.info(f"Accuracy: {accuracy * 100}%")
+    logger.info(f"F1 Score: {f1 * 100}%")
 
-    return accuracy
+    return f1, accuracy
 
 
 def train(program, train_set, eval_set, cur_device, limit, lr, check_epoch=1, program_name="DomiKnow", args=None):
     def get_avg_loss():
-        from domiknows.program.model.base import Mode
-
         if cur_device is not None:
             program.model.to(cur_device)
         program.model.mode(Mode.TEST)
@@ -138,11 +138,10 @@ def train(program, train_set, eval_set, cur_device, limit, lr, check_epoch=1, pr
     best_epoch = 0
     old_file = None
     check_epoch = args.check_epoch
-    training_file = open("training.txt", "a")
-    print("-" * 10, file=training_file)
-    print("Training by {:s} of ({:s} {:s})".format(program_name, args.train_file, "FR"), file=training_file)
-    print("Learning Rate:", args.lr, file=training_file)
-    training_file.close()
+    logger.info("-" * 10)
+    logger.info(f"Training by {program_name} of ({args.train_file} FR)")
+    logger.info(f"Learning Rate: {args.lr}")
+
     cur_epoch = 0
     if args.optim != "adamw":
         optimizer = lambda param: transformers.optimization.Adafactor(
@@ -157,12 +156,12 @@ def train(program, train_set, eval_set, cur_device, limit, lr, check_epoch=1, pr
         else:
             program.train(train_set, train_epoch_num=check_epoch, Optim=optimizer, device=cur_device)
         cur_epoch += check_epoch
-        # loss = get_avg_loss()
-        training_file = open("training.txt", "a")
+        loss = get_avg_loss()
+
         accuracy = eval(program, eval_set, cur_device, args)
-        print("Epoch:", epoch, file=training_file)
-        # print("Loss:", loss, file=training_file)
-        print("Dev Accuracy:", accuracy * 100, "%", file=training_file)
+        logger.info(f"Epoch: {epoch}")
+        logger.info(f"Loss: {loss}")
+        logger.info(f"Dev Accuracy: {accuracy * 100}%")
         if accuracy >= best_accuracy:
             best_epoch = epoch
             best_accuracy = accuracy
@@ -185,17 +184,15 @@ def train(program, train_set, eval_set, cur_device, limit, lr, check_epoch=1, pr
                 + args.model
             )
             program.save(os.path.join(args.results_path, new_file))
-        training_file.close()
 
-    training_file = open("training.txt", "a")
     if cur_epoch < limit:
         if args.pmd:
             program.train(train_set, c_warmup_iters=0, train_epoch_num=check_epoch, Optim=optimizer, device=cur_device)
         else:
             program.train(train_set, train_epoch_num=check_epoch, Optim=optimizer, device=cur_device)
         accuracy = eval(program, eval_set, cur_device, args)
-        print("Epoch:", limit, file=training_file)
-        print("Dev Accuracy:", accuracy * 100, "%", file=training_file)
+        logger.info(f"Epoch: {limit}")
+        logger.info(f"Dev Accuracy: {accuracy * 100}%")
         if accuracy >= best_accuracy:
             best_epoch = limit
             # if old_file:
@@ -219,8 +216,7 @@ def train(program, train_set, eval_set, cur_device, limit, lr, check_epoch=1, pr
             old_file = new_file
             program.save(os.path.join(args.results_path, new_file))
 
-    print("Best epoch ", best_epoch, file=training_file)
-    training_file.close()
+    logger.info(f"Best epoch {best_epoch}")
     return best_epoch
 
 
@@ -276,21 +272,20 @@ def main(args):
     train_file = "tb_dense_train.json"
     training_set = TemporalReader.from_file(
         file_path=os.path.join(args.data_path, train_file), question_type="FR", batch_size=args.batch_size
-    )
+    )[:1]
 
     test_file = "tb_dense_test.json"
     testing_set = TemporalReader.from_file(
         file_path=os.path.join(args.data_path, test_file), question_type="FR", batch_size=args.batch_size
-    )
+    )[:1]
 
     eval_file = "tb_dense_dev.json"
     eval_set = TemporalReader.from_file(
         file_path=os.path.join(args.data_path, eval_file), question_type="FR", batch_size=args.batch_size
-    )
+    )[:1]
 
     program_name = "PMD" if args.pmd else "Sampling" if args.sampling else "Base"
 
-    # eval(program, testing_set, cur_device, args)
     if args.loaded:
         if args.model_change:
             pretrain_model = torch.load(
@@ -322,7 +317,7 @@ def main(args):
                 },
             )
 
-        eval(program, testing_set, cur_device, args, print_result=True)
+        eval(program, testing_set, cur_device, args)
 
     elif args.loaded_train:
         if args.model_change:

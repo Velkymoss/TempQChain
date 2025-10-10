@@ -23,7 +23,8 @@ dependencies = [
     "lxml>=6.0.0",
     "ipykernel>=6.30.0",
     "typer>=0.9.4",
-    "click<8.2.0"
+    "click<8.2.0",
+    "scikit-learn>=1.6.1",
 ]
 
 [project.scripts]
