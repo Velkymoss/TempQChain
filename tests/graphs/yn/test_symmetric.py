@@ -8,7 +8,7 @@ from tests.graphs.yn.conftest import YnSpecificDummyLearner, assert_ilp_result_y
 from tests.graphs.yn.graph_yn import get_graph
 
 
-def test_symmetric():
+def test_symmetric(device):
     (
         graph,
         story,
@@ -47,28 +47,30 @@ def test_symmetric():
         story["question_ids"],
         story["labels"],
         forward=make_question,
+        device=device,
     )
 
-    question[answer_class] = YnSpecificDummyLearner(story_contain, predictions=[0, 1000])
+    question[answer_class] = YnSpecificDummyLearner(story_contain, predictions=[0, 1000], device=device)
 
     symmetric[s_quest1.reversed, s_quest2.reversed] = CompositionCandidateSensor(
         relations=(s_quest1.reversed, s_quest2.reversed),
         forward=check_symmetric,
+        device=device,
     )
 
     poi_list = [question, answer_class]
     poi_list.extend([symmetric])
 
-    program = SolverPOIProgram(graph=graph, poi=poi_list)
+    program = SolverPOIProgram(graph=graph, poi=poi_list, device=device)
 
     for datanode in program.populate(dataset=synthetic_dataset):
         for i, q_node in enumerate(datanode.getChildDataNodes()):
             if i == 0:
-                assert_local_softmax(q_node, answer_class, torch.tensor([0.5, 0.5]))
+                assert_local_softmax(q_node, answer_class, torch.tensor([0.5, 0.5], device=device), device=device)
             else:
-                assert_local_softmax(q_node, answer_class, torch.tensor([0.0, 1.0]))
+                assert_local_softmax(q_node, answer_class, torch.tensor([0.0, 1.0], device=device), device=device)
 
         datanode.inferILPResults()
 
         for i, q_node in enumerate(datanode.getChildDataNodes()):
-            assert_ilp_result_yn(q_node, answer_class, torch.tensor([0.0, 1.0]))
+            assert_ilp_result_yn(q_node, answer_class, torch.tensor([0.0, 1.0], device=device), device=device)

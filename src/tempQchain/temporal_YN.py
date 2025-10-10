@@ -8,7 +8,7 @@ from domiknows.program.model.base import Mode
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, precision_score, recall_score
 
 from tempQchain.logger import get_logger
-from tempQchain.programs.Program_tb_dense_YN import program_declaration
+from src.tempQchain.programs.program_tb_dense_YN import program_declaration
 from tempQchain.readers.temporal_reader import TemporalReader
 
 logger = get_logger(__name__)

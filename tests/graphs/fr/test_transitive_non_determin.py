@@ -14,7 +14,7 @@ from tests.graphs.fr.conftest import (
 from tests.graphs.fr.graph_fr import get_graph
 
 
-def test_transitive_non_determin():
+def test_transitive_non_determin(device):
     (
         graph,
         story,
@@ -63,14 +63,15 @@ def test_transitive_non_determin():
         story["question_ids"],
         story["labels"],
         forward=make_question,
+        device=device,
     )
 
-    question[before] = QuestionSpecificDummyLearner(story_contain, predictions=[True, False, False])
-    question[includes] = QuestionSpecificDummyLearner(story_contain, predictions=[False, True, False])
-    question[after] = DummyLearner(story_contain, positive=False)
-    question[is_included] = DummyLearner(story_contain, positive=False)
-    question[simultaneous] = DummyLearner(story_contain, positive=False)
-    question[vague] = DummyLearner(story_contain, positive=False)
+    question[before] = QuestionSpecificDummyLearner(story_contain, predictions=[True, False, False], device=device)
+    question[includes] = QuestionSpecificDummyLearner(story_contain, predictions=[False, True, False], device=device)
+    question[after] = DummyLearner(story_contain, positive=False, device=device)
+    question[is_included] = DummyLearner(story_contain, positive=False, device=device)
+    question[simultaneous] = DummyLearner(story_contain, positive=False, device=device)
+    question[vague] = DummyLearner(story_contain, positive=False, device=device)
 
     synthetic_dataset = [
         {
@@ -95,28 +96,29 @@ def test_transitive_non_determin():
     transitive[tran_quest1.reversed, tran_quest2.reversed, tran_quest3.reversed] = CompositionCandidateSensor(
         relations=(tran_quest1.reversed, tran_quest2.reversed, tran_quest3.reversed),
         forward=check_transitive,
+        device=device,
     )
     poi_list.extend([transitive])
 
-    program = SolverPOIProgram(graph=graph, poi=poi_list)
+    program = SolverPOIProgram(graph=graph, poi=poi_list, device=device)
 
     for datanode in program.populate(dataset=synthetic_dataset):
         for i, q_node in enumerate(datanode.getChildDataNodes()):
             if i == 0:
                 for label in labels:
                     if label == before:
-                        assert_local_softmax(q_node, label, torch.tensor([0.0, 1.0]))
+                        assert_local_softmax(q_node, label, torch.tensor([0.0, 1.0], device=device))
                     else:
-                        assert_local_softmax(q_node, label, torch.tensor([1.0, 0.0]))
+                        assert_local_softmax(q_node, label, torch.tensor([1.0, 0.0], device=device))
             elif i == 1:
                 for label in labels:
                     if label == includes:
-                        assert_local_softmax(q_node, label, torch.tensor([0.0, 1.0]))
+                        assert_local_softmax(q_node, label, torch.tensor([0.0, 1.0], device=device))
                     else:
-                        assert_local_softmax(q_node, label, torch.tensor([1.0, 0.0]))
+                        assert_local_softmax(q_node, label, torch.tensor([1.0, 0.0], device=device))
             else:
                 for label in labels:
-                    assert_local_softmax(q_node, label, torch.tensor([1.0, 0.0]))
+                    assert_local_softmax(q_node, label, torch.tensor([1.0, 0.0], device=device))
 
         datanode.inferILPResults()
 

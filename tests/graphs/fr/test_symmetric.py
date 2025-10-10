@@ -8,7 +8,7 @@ from tests.graphs.fr.conftest import DummyLearner, QuestionSpecificDummyLearner,
 from tests.graphs.fr.graph_fr import get_graph
 
 
-def test_symmetric():
+def test_symmetric(device):
     (
         graph,
         story,
@@ -58,13 +58,14 @@ def test_symmetric():
         story["question_ids"],
         story["labels"],
         forward=make_question,
+        device=device,
     )
 
     for label in labels:
         if label == target_label:
-            question[label] = QuestionSpecificDummyLearner(story_contain, predictions=[True, False])
+            question[label] = QuestionSpecificDummyLearner(story_contain, predictions=[True, False], device=device)
         else:
-            question[label] = DummyLearner(story_contain, positive=False)
+            question[label] = DummyLearner(story_contain, positive=False, device=device)
 
     synthetic_dataset = [
         {
@@ -89,27 +90,28 @@ def test_symmetric():
     inverse[inv_question1.reversed, inv_question2.reversed] = CompositionCandidateSensor(
         relations=(inv_question1.reversed, inv_question2.reversed),
         forward=check_symmetric,
+        device=device,
     )
     poi_list.extend([inverse])
 
-    program = SolverPOIProgram(graph=graph, poi=poi_list)
+    program = SolverPOIProgram(graph=graph, poi=poi_list, device=device)
 
     for datanode in program.populate(dataset=synthetic_dataset):
         for i, q_node in enumerate(datanode.getChildDataNodes()):
             if i == 0:
                 for label in labels:
                     if label == target_label:
-                        assert_local_softmax(q_node, label, torch.tensor([0.0, 1.0]))
+                        assert_local_softmax(q_node, label, torch.tensor([0.0, 1.0], device=device))
                     else:
-                        assert_local_softmax(q_node, label, torch.tensor([1.0, 0.0]))
+                        assert_local_softmax(q_node, label, torch.tensor([1.0, 0.0], device=device))
             else:
                 for label in labels:
-                    assert_local_softmax(q_node, label, torch.tensor([1.0, 0.0]))
+                    assert_local_softmax(q_node, label, torch.tensor([1.0, 0.0], device=device))
 
         datanode.inferILPResults()
         for i, q_node in enumerate(datanode.getChildDataNodes()):
             for label in labels:
                 if label == target_label:
-                    assert_ilp_result(q_node, label, 1.0)
+                    assert_ilp_result(q_node, label, 1.0, device=device)
                 else:
-                    assert_ilp_result(q_node, label, 0.0)
+                    assert_ilp_result(q_node, label, 0.0, device=device)

@@ -23,9 +23,10 @@ class DummyLearner(TorchLearner):
 
     """
 
-    def __init__(self, *pre, positive: bool = False):
+    def __init__(self, *pre, positive: bool = False, device=None):
         TorchLearner.__init__(self, *pre)
         self.positive = positive
+        self.device = device
 
     def forward(self, x: Sequence) -> torch.Tensor:
         """
@@ -48,7 +49,7 @@ class DummyLearner(TorchLearner):
                     [ 1000, -1000],
                     [ 1000, -1000]])
         """
-        result = torch.zeros(len(x), 2)
+        result = torch.zeros(len(x), 2, device=self.device)
         if self.positive:
             result[:, 0] = -1000
             result[:, 1] = 1000
@@ -63,17 +64,18 @@ class QuestionSpecificDummyLearner(TorchLearner):
     Learner that makes different predictions based on question position in chain
     """
 
-    def __init__(self, *pre, predictions: list[bool]):
+    def __init__(self, *pre, predictions: list[bool], device=None):
         """
         Args:
             predictions: List of booleans, one per question.
         """
         TorchLearner.__init__(self, *pre)
         self.predictions = predictions
+        self.device = device
 
     def forward(self, x: Sequence) -> torch.Tensor:
         batch_size = len(x)
-        result = torch.zeros(batch_size, 2)
+        result = torch.zeros(batch_size, 2, device=self.device)
 
         for i in range(batch_size):
             if i < len(self.predictions) and self.predictions[i]:
@@ -85,11 +87,15 @@ class QuestionSpecificDummyLearner(TorchLearner):
         return result
 
 
-def to_int_list(x: Sequence) -> torch.LongTensor:
-    return torch.LongTensor([int(i) for i in x])
+def to_int_list(x: Sequence, device=None) -> torch.LongTensor:
+    return (
+        torch.LongTensor([int(i) for i in x]).to(device)
+        if device is not None
+        else torch.LongTensor([int(i) for i in x])
+    )
 
 
-def make_labels(label_list: str) -> list[torch.LongTensor]:
+def make_labels(label_list: str, device=None) -> list[torch.LongTensor]:
     """
     input(str): concatenated  batch labels
     example input: "4@@8@@16@@8@@2@@2@@2@@2"
@@ -111,12 +117,12 @@ def make_labels(label_list: str) -> list[torch.LongTensor]:
             all_labels_list[ind].append(1 if bits_label & cur_label else 0)
             cur_label *= 2
 
-    return [to_int_list(labels_list) for labels_list in all_labels_list]
+    return [to_int_list(labels_list, device=device) for labels_list in all_labels_list]
 
 
-def make_question(questions: str, stories: str, relations: str, q_ids: str, labels: str) -> QuestionData:
-    all_labels = make_labels(labels)
-    ids = to_int_list(q_ids.split("@@"))
+def make_question(questions: str, stories: str, relations: str, q_ids: str, labels: str, device=None) -> QuestionData:
+    all_labels = make_labels(labels, device=device)
+    ids = to_int_list(q_ids.split("@@"), device=device)
     (
         after_list,
         before_list,
@@ -127,7 +133,9 @@ def make_question(questions: str, stories: str, relations: str, q_ids: str, labe
     ) = all_labels
 
     return QuestionData(
-        story_contain=torch.ones(len(questions.split("@@")), 1),
+        story_contain=torch.ones(len(questions.split("@@")), 1, device=device)
+        if device is not None
+        else torch.ones(len(questions.split("@@")), 1),
         questions=questions.split("@@"),
         stories=stories.split("@@"),
         relations=relations.split("@@"),
@@ -141,18 +149,21 @@ def make_question(questions: str, stories: str, relations: str, q_ids: str, labe
     )
 
 
-def assert_ilp_result(q_node, label, expected_value):
+def assert_ilp_result(q_node, label, expected_value, device=None):
     """Assert ILP predictions match expected value"""
-    result = q_node.getAttribute(label, "ILP")
-    expected_tensor = torch.tensor([expected_value])
+    result = q_node.getAttribute(label, "ILP").to(device) if device is not None else q_node.getAttribute(label, "ILP")
+    expected_tensor = (
+        torch.tensor([expected_value], device=device) if device is not None else torch.tensor([expected_value])
+    )
     assert torch.allclose(result, expected_tensor), f"Label {label}: Expected {expected_tensor}, got {result}"
 
 
-def assert_ilp_labels_sum_to_one(q_node, labels):
+def assert_ilp_labels_sum_to_one(q_node, labels, device=None):
     """Assert that all ILP label predictions sum to 1.0"""
-    total = torch.tensor([0.0])
+    total = torch.tensor([0.0], device=device) if device is not None else torch.tensor([0.0])
     for label in labels:
         result = q_node.getAttribute(label, "ILP")
         total += result
 
-    assert torch.allclose(total, torch.tensor([1.0])), f"Expected sum of all labels to be 1.0, got {total.item()}"
+    expected = torch.tensor([1.0], device=device) if device is not None else torch.tensor([1.0])
+    assert torch.allclose(total, expected), f"Expected sum of all labels to be 1.0, got {total.item()}"

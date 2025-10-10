@@ -9,13 +9,14 @@ class YnSpecificDummyLearner(TorchLearner):
     Learner that makes different predictions based on input value and position in chain
     """
 
-    def __init__(self, *pre, predictions: list[int]):
+    def __init__(self, *pre, predictions: list[int], device=None):
         TorchLearner.__init__(self, *pre)
         self.predictions = predictions
+        self.device = device
 
     def forward(self, x: Sequence) -> torch.Tensor:
         batch_size = len(x)
-        result = torch.zeros(batch_size, 2)
+        result = torch.zeros(batch_size, 2, device=self.device)
 
         for i in range(batch_size):
             if i < len(self.predictions) and self.predictions[i] == 1000:
@@ -30,23 +31,29 @@ class YnSpecificDummyLearner(TorchLearner):
         return result
 
 
-def str_to_int_list(x: Sequence) -> torch.LongTensor:
-    return torch.LongTensor([int(i) for i in x])
+def str_to_int_list(x: Sequence, device=None) -> torch.LongTensor:
+    return (
+        torch.LongTensor([int(i) for i in x]).to(device)
+        if device is not None
+        else torch.LongTensor([int(i) for i in x])
+    )
 
 
-def make_labels(label_list: str) -> torch.LongTensor:
+def make_labels(label_list: str, device=None) -> torch.LongTensor:
     labels = label_list.split("@@")
     label_nums = [1 if label == "Yes" else 0 if label == "No" else 2 for label in labels]
-    return str_to_int_list(label_nums)
+    return str_to_int_list(label_nums, device=device)
 
 
 def make_question(
-    questions: str, stories: str, relations: str, q_ids: str, labels: str
+    questions: str, stories: str, relations: str, q_ids: str, labels: str, device=None
 ) -> tuple[torch.Tensor, list[str], list[str], list[str], torch.LongTensor, torch.LongTensor]:
-    num_labels = make_labels(labels)
-    ids = str_to_int_list(q_ids.split("@@"))
+    num_labels = make_labels(labels, device=device)
+    ids = str_to_int_list(q_ids.split("@@"), device=device)
     return (
-        torch.ones(len(questions.split("@@")), 1),
+        torch.ones(len(questions.split("@@")), 1, device=device)
+        if device is not None
+        else torch.ones(len(questions.split("@@")), 1),
         questions.split("@@"),
         stories.split("@@"),
         relations.split("@@"),
@@ -54,7 +61,11 @@ def make_question(
         num_labels,
     )
 
-def assert_ilp_result_yn(q_node, label, expected_tensor):
+
+def assert_ilp_result_yn(q_node, label, expected_tensor, device=None):
     """Assert ILP predictions match expected value"""
     result = q_node.getAttribute(label, "ILP")
-    assert torch.allclose(result, expected_tensor), (f"Label {label}: Expected {torch.tensor([0, 1])}, got {result}")
+    if device is not None:
+        result = result.to(device)
+        expected_tensor = expected_tensor.to(device)
+    assert torch.allclose(result, expected_tensor), f"Label {label}: Expected {expected_tensor}, got {result}"

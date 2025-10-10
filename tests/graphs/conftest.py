@@ -1,4 +1,12 @@
+import pytest
 import torch
+
+
+@pytest.fixture(scope="session")
+def device():
+    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #return torch.device("cpu")
+
 
 
 def check_symmetric(**kwargs) -> bool:
@@ -42,7 +50,10 @@ def check_transitive(**kwargs) -> bool:
     return False
 
 
-def assert_local_softmax(q_node, label, expected_tensor):
+def assert_local_softmax(q_node, label, expected_tensor, device=None):
     """Assert local/softmax predictions match expected values"""
     result = q_node.getAttribute(label, "local/softmax")
+    if device is not None:
+        result = result.to(device)
+        expected_tensor = expected_tensor.to(device)
     assert torch.allclose(result, expected_tensor), f"Label {label}: Expected {expected_tensor}, got {result}"
