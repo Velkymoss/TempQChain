@@ -15,17 +15,20 @@ Modified code from paper https://arxiv.org/abs/2406.13828 published by Premsri a
 - [uv](https://docs.astral.sh/uv/) package manager
 
 ### Dependencies
-
+Install uv if not already installed:
 ```bash
-# Install uv if not already installed
 curl -LsSf https://astral.sh/uv/install.sh | sh
-
-git clone https://github.com/Velkymoss/SpaRTUNQChain.git
-cd SpaRTUNQChain
-
+```
+Or alternatively via pip:
+```bash
+pip install uv
+```
+Then in the project root use:
+```bash
+uv venv
+source .venv/bin/activate
 uv sync
 ```
-
 ### Data
 We are using a dense version of the [TimeBank corpus](https://aclanthology.org/P14-2082/). 
 
@@ -51,6 +54,21 @@ q-chain temporal-fr [OPTIONS]
 ### YN Mode
 ```bash
 q-chain temporal-yn [OPTIONS]
+```
+
+## Experiment Tracking
+
+This project uses MLflow for experiment tracking.  
+Enable MLflow with the `--use-mlflow` flag:
+```bash
+q-chain temporal-fr --use-mlflow
+```
+MLflow will log metrics, hyperparameters and model artifacts 
+under Temporal_FR/Temporal_YN.<br>
+By default, logs are saved locally in mlruns/. 
+You can browse them with:
+```bash
+mlflow ui
 ```
 
 ## Tests
@@ -84,7 +102,3 @@ if '.' in self.programName:
 ```
 
 **Why this is needed:** The library uses `.index('.')` which throws a `ValueError` when no dot is found in the program name. This happens when using CLI entry points like `q-chain temporal-fr` where the name doesn't have a file extension.
-
-## TODO
-- create domiknows programs for T5-v4-FR and T5-v5-FR
-- create tests for graphs

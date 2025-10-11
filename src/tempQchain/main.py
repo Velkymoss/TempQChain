@@ -46,13 +46,14 @@ def temporal_fr(
     text_rules: bool = typer.Option(False, help="Include rules as text"),
     cuda: int = typer.Option(0, help="CUDA device number (-1 for CPU)"),
     optim: str = typer.Option("adamw", help="Optimizer type"),
-    # Model loading/saving
+    # Model loading/saving, experiment tracking
     loaded: bool = typer.Option(False, help="Load and evaluate existing model"),
     loaded_file: str = typer.Option("train_model", help="File name to load model from"),
     loaded_train: bool = typer.Option(False, help="Load model and continue training"),
     model_change: bool = typer.Option(False, help="Allow model architecture changes when loading"),
     save: bool = typer.Option(False, help="Save the trained model"),
     save_file: str = typer.Option("train_model", help="File name to save model"),
+    use_mlflow: bool = typer.Option(False, help="Use MLflow for experiment tracking"),
 ):
     import argparse
 
@@ -81,6 +82,7 @@ def temporal_fr(
         model=model,
         version=version,
         optim=optim,
+        use_mlflow=use_mlflow,
     )
     temporal_FR.main(args)
 
@@ -108,12 +110,13 @@ def temporal_yn(
     text_rules: bool = typer.Option(False, help="Include rules as text"),
     cuda: int = typer.Option(0, help="CUDA device number (-1 for CPU)"),
     check_condition: str = typer.Option("acc", help="Check condition: acc (accuracy) or loss"),
-    # Model loading/saving
+    # Model loading/saving and experiment tracking
     loaded: bool = typer.Option(False, help="Load and evaluate existing model"),
     loaded_file: str = typer.Option("train_model", help="File name to load model from"),
     loaded_train: bool = typer.Option(False, help="Load model and continue training"),
     save: bool = typer.Option(False, help="Save the trained model"),
     save_file: str = typer.Option("train_model", help="File name to save model"),
+    use_mlflow: bool = typer.Option(False, help="Use MLflow for experiment tracking"),
 ):
     import argparse
 
@@ -141,6 +144,7 @@ def temporal_yn(
         check_epoch=check_epoch,
         model=model,
         check_condition=check_condition,
+        use_mlflow=use_mlflow,
     )
     temporal_YN.main(args)
 

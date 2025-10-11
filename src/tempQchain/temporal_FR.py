@@ -89,11 +89,26 @@ def eval(
     if log_hyperparams:
         logger.info(f"Program: {'Primal Dual' if args.pmd else 'Sampling Loss' if args.sampling else 'DomiKnowS'}")
         logger.info(f"Batch Size: {args.batch_size}")
-        logger.info(f"Learning Rate: {args.lr}")
-        logger.info(f"Beta: {args.beta}")
-        logger.info(f"Sampling Size: {args.sampling_size}")
+        logger.info(f"Beta: {args.beta} " if args.pmd else "")
+        logger.info(f"Sampling Size: {args.sampling_size}" if args.sampling else "")
+        if args.use_mlflow:
+            mlflow.log_params(
+                {
+                    "program": "Primal Dual" if args.pmd else "Sampling Loss" if args.sampling else "DomiKnowS",
+                    "batch_size": args.batch_size,
+                    "beta": args.beta if args.pmd else None,
+                    "sampling_size": args.sampling_size if args.sampling else None,
+                }
+            )
 
     if log_metrics:
+        if args.use_mlflow:
+            mlflow.log_metrics(
+                {
+                    "f1": f1,
+                    "accuracy": accuracy,
+                }
+            )
         logger.info(f"Accuracy: {accuracy * 100}%")
         logger.info(f"F1 Score: {f1 * 100}%")
 
@@ -127,22 +142,24 @@ def train(
         logger.info(f"Using Primal Dual Method with Beta: {args.beta}")
     if args.sampling:
         logger.info(f"Using Sampling Loss with Size: {args.sampling_size}")
-    mlflow.log_params(
-        {
-            "model": args.model,
-            "learning_rate": args.lr,
-            "batch_size": args.batch_size,
-            "pmd": args.pmd,
-            "beta": args.beta if args.pmd else None,
-            "epochs": args.epoch,
-            "constraints": args.constraints,
-            "sampling": args.sampling if args.sampling else None,
-            "sampling_size": args.sampling_size if args.sampling else None,
-            "dropout": args.dropout,
-            "optimizer": args.optim,
-            "version": args.version if args.model == "t5-adapter" else None,
-        }
-    )
+
+    if args.use_mlflow:
+        mlflow.log_params(
+            {
+                "model": args.model,
+                "learning_rate": args.lr,
+                "batch_size": args.batch_size,
+                "pmd": args.pmd,
+                "beta": args.beta if args.pmd else None,
+                "epochs": args.epoch,
+                "constraints": args.constraints,
+                "sampling": args.sampling if args.sampling else None,
+                "sampling_size": args.sampling_size if args.sampling else None,
+                "dropout": args.dropout,
+                "optimizer": args.optim,
+                "version": args.version if args.model == "t5-adapter" else None,
+            }
+        )
 
     if args.optim != "adamw":
 
@@ -169,15 +186,16 @@ def train(
         logger.info(f"Eval Loss: {eval_loss}")
         logger.info(f"Dev Accuracy: {accuracy * 100}%")
         logger.info(f"Dev F1: {f1 * 100}%")
-        mlflow.log_metrics(
-            {
-                "train_loss": train_loss,
-                "eval_loss": eval_loss,
-                "eval_f1": f1,
-                "eval_accuracy": accuracy,
-            },
-            step=epoch,
-        )
+        if args.use_mlflow:
+            mlflow.log_metrics(
+                {
+                    "train_loss": train_loss,
+                    "eval_loss": eval_loss,
+                    "eval_f1": f1,
+                    "eval_accuracy": accuracy,
+                },
+                step=epoch,
+            )
 
         if f1 >= best_f1:
             best_epoch = epoch
@@ -203,30 +221,33 @@ def train(
             model_path = os.path.join(args.results_path, new_file)
             program.save(model_path)
             logger.info(f"New best model saved to: {model_path}")
-            mlflow.log_artifact(model_path)
+            if args.use_mlflow:
+                mlflow.log_artifact(model_path)
 
     logger.info(f"Best epoch {best_epoch}")
     logger.info(f"Best eval Accuracy {best_accuracy * 100}%")
     logger.info(f"Best eval F1 {best_f1 * 100}%")
-    mlflow.log_metrics(
-        {
-            "best_eval_f1": best_f1,
-            "best_eval_accuracy": best_accuracy,
-            "best_epoch": best_epoch,
-        }
-    )
+    if args.use_mlflow:
+        mlflow.log_metrics(
+            {
+                "best_eval_f1": best_f1,
+                "best_eval_accuracy": best_accuracy,
+                "best_epoch": best_epoch,
+            }
+        )
 
     if test_set:
         logger.info("Final evaluation on test set")
         f1, accuracy = eval(program=program, test_set=test_set, cur_device=cur_device, args=args)
         logger.info(f"Final test Accuracy {accuracy * 100}%")
         logger.info(f"Final test F1 {f1 * 100}%")
-        mlflow.log_metrics(
-            {
-                "final_test_f1": f1,
-                "final_test_accuracy": accuracy,
-            }
-        )
+        if args.use_mlflow:
+            mlflow.log_metrics(
+                {
+                    "final_test_f1": f1,
+                    "final_test_accuracy": accuracy,
+                }
+            )
 
     return best_epoch
 
@@ -237,10 +258,11 @@ def main(args: Any) -> None:
     random.seed(SEED)
     torch.manual_seed(SEED)
 
-    run_name = f"{args.model}_{datetime.now().strftime('%Y-%d-%m_%H:%M:%S')}"
-    logger.info(f"Starting run with id {run_name}")
-    mlflow.set_experiment("Temporal_FR")
-    mlflow.start_run(run_name=run_name)
+    if args.use_mlflow:
+        run_name = f"{args.model}_{datetime.now().strftime('%Y-%d-%m_%H:%M:%S')}"
+        logger.info(f"Starting run with id {run_name}")
+        mlflow.set_experiment("Temporal_FR")
+        mlflow.start_run(run_name=run_name)
 
     cuda_number = args.cuda
     if cuda_number == -1:
@@ -386,4 +408,5 @@ def main(args: Any) -> None:
             test_set=test_set,
             args=args,
         )
-    mlflow.end_run()
+    if args.use_mlflow:
+        mlflow.end_run()
