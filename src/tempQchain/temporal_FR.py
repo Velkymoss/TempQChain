@@ -1,12 +1,15 @@
 import os
 import random
 import warnings
+from datetime import datetime
+from typing import Any
 
+import mlflow
 import numpy as np
 import torch
 import tqdm
 import transformers
-from domiknows.program.model.base import Mode
+from domiknows.program.lossprogram import LearningBasedProgram
 from sklearn.metrics import accuracy_score, f1_score
 
 from tempQchain.graphs.graph_tb_dense_FR import (
@@ -25,13 +28,24 @@ from tempQchain.programs.program_tb_dense_FR import (
     program_declaration_tb_dense_fr_T5_v3,
 )
 from tempQchain.readers.temporal_reader import TemporalReader
+from tempQchain.utils import get_avg_loss
 
 warnings.filterwarnings("ignore")
 
 logger = get_logger(__name__)
 
 
-def eval(program, testing_set, cur_device, args):
+def eval(
+    program: LearningBasedProgram,
+    test_set: list[dict[str, str]],
+    cur_device: str,
+    args: Any = None,
+    log_hyperparams: bool = False,
+    log_metrics: bool = False,
+) -> tuple[float, float]:
+    if args.loaded:
+        logger.info(f"Loaded Model Name: {args.loaded_file}")
+
     all_labels = [
         before,
         after,
@@ -41,29 +55,13 @@ def eval(program, testing_set, cur_device, args):
         vague,
     ]
 
-    all_labels_text = [
-        "before",
-        "after",
-        "includes",
-        "is_included",
-        "simultaneous",
-        "vague",
-    ]
-
-    # def remove_opposite(ind1, ind2, result_set, result_list):
-    #     if ind1 in pred_set and ind2 in pred_set:
-    #         if result_list[ind1] > result_list[ind2]:
-    #             result_set.remove(ind2)
-    #         else:
-    #             result_set.remove(ind1)
-
     pred_list = []
     pred_set = set()
 
     all_true = []
     all_pred = []
 
-    for datanode in tqdm.tqdm(program.populate(testing_set, device=cur_device), "Checking accuracy"):
+    for datanode in tqdm.tqdm(program.populate(test_set, device=cur_device), "Checking f1/accuracy..."):
         for question in datanode.getChildDataNodes():
             pred_set.clear()
             pred_list.clear()
@@ -74,21 +72,6 @@ def eval(program, testing_set, cur_device, args):
                     pred_set.add(ind)
                 pred_list.append(pred[1].item())
 
-            # remove_opposite(0, 1, pred_set, pred_list)
-            # remove_opposite(2, 3, pred_set, pred_list)
-            # remove_opposite(4, 5, pred_set, pred_list)
-            # Getting acutal label
-            # if args.model == "t5-adapter":
-            #     expected_text = question.getAttribute("text_labels")
-            #     pred_text = ""
-            #     for i, label in enumerate(all_labels_text):
-            #         if multilabel:
-            #             pred_text += label + ":" + ("yes" if i in pred_set else "no") + " "
-            #         else:
-            #             if i in pred_set:
-            #                 pred_text += label if not pred_text else (", " + label)
-            #     correct += int(expected_text.strip() == pred_text.strip())
-            # else:
             true_labels = []
             pred_labels = []
             for ind, label_ind in enumerate(all_labels):
@@ -96,77 +79,111 @@ def eval(program, testing_set, cur_device, args):
                 pred = 1 if ind in pred_set else 0
                 true_labels.append(label)
                 pred_labels.append(pred)
-                
+
             all_true.append(true_labels)
             all_pred.append(pred_labels)
-        
+
     accuracy = accuracy_score(all_true, all_pred)
     f1 = f1_score(all_true, all_pred, average="weighted")
 
-    logger.info(f"Program: {'Primal Dual' if args.pmd else 'Sampling Loss' if args.sampling else 'DomiKnowS'}")
-    if not args.loaded:
-        logger.info("Training info")
+    if log_hyperparams:
+        logger.info(f"Program: {'Primal Dual' if args.pmd else 'Sampling Loss' if args.sampling else 'DomiKnowS'}")
         logger.info(f"Batch Size: {args.batch_size}")
-        logger.info(f"Epoch: {args.epoch}")
         logger.info(f"Learning Rate: {args.lr}")
         logger.info(f"Beta: {args.beta}")
         logger.info(f"Sampling Size: {args.sampling_size}")
-    else:
-        logger.info(f"Loaded Model Name: {args.loaded_file}")
-    logger.info(f"Accuracy: {accuracy * 100}%")
-    logger.info(f"F1 Score: {f1 * 100}%")
+
+    if log_metrics:
+        logger.info(f"Accuracy: {accuracy * 100}%")
+        logger.info(f"F1 Score: {f1 * 100}%")
 
     return f1, accuracy
 
 
-def train(program, train_set, eval_set, cur_device, limit, lr, check_epoch=1, program_name="DomiKnow", args=None):
-    def get_avg_loss():
-        if cur_device is not None:
-            program.model.to(cur_device)
-        program.model.mode(Mode.TEST)
-        program.model.reset()
-        train_loss = 0
-        total_loss = 0
-        with torch.no_grad():
-            for data_item in tqdm.tqdm(train_set, "Calculating Loss of training"):
-                loss, _, *output = program.model(data_item)
-                total_loss += 1
-                train_loss += loss
-        return train_loss / total_loss
-
+def train(
+    program: LearningBasedProgram,
+    train_set: list[dict[str, str]],
+    eval_set: list[dict[str, str]],
+    test_set: list[dict[str, str]] | None,
+    cur_device: str | None,
+    lr: float,
+    program_name: str = "DomiKnow",
+    args: Any = None,
+) -> int:
+    best_f1 = 0
     best_accuracy = 0
     best_epoch = 0
-    old_file = None
-    check_epoch = args.check_epoch
-    logger.info("-" * 10)
-    logger.info(f"Training by {program_name} of ({args.train_file} FR)")
+
+    logger.info("Starting FR training...")
+    logger.info(f"Model: {args.model}")
+    logger.info("Using Hyperparameters:")
     logger.info(f"Learning Rate: {args.lr}")
+    logger.info(f"Batch Size: {args.batch_size}")
+    if args.constraints:
+        logger.info("Using Constraints")
+    if args.dropout:
+        logger.info("Using Dropout")
+    if args.pmd:
+        logger.info(f"Using Primal Dual Method with Beta: {args.beta}")
+    if args.sampling:
+        logger.info(f"Using Sampling Loss with Size: {args.sampling_size}")
+    mlflow.log_params(
+        {
+            "model": args.model,
+            "learning_rate": args.lr,
+            "batch_size": args.batch_size,
+            "pmd": args.pmd,
+            "beta": args.beta if args.pmd else None,
+            "epochs": args.epoch,
+            "constraints": args.constraints,
+            "sampling": args.sampling if args.sampling else None,
+            "sampling_size": args.sampling_size if args.sampling else None,
+            "dropout": args.dropout,
+            "optimizer": args.optim,
+            "version": args.version if args.model == "t5-adapter" else None,
+        }
+    )
 
-    cur_epoch = 0
     if args.optim != "adamw":
-        optimizer = lambda param: transformers.optimization.Adafactor(
-            param, lr=lr, scale_parameter=False, relative_step=False
-        )
-    else:
-        optimizer = lambda param: torch.optim.AdamW(param, lr=lr)
-    for epoch in range(check_epoch, limit, check_epoch):
-        logger.info("Training")
-        if args.pmd:
-            program.train(train_set, c_warmup_iters=0, train_epoch_num=check_epoch, Optim=optimizer, device=cur_device)
-        else:
-            program.train(train_set, train_epoch_num=check_epoch, Optim=optimizer, device=cur_device)
-        cur_epoch += check_epoch
-        loss = get_avg_loss()
 
-        accuracy = eval(program, eval_set, cur_device, args)
+        def optimizer(param):
+            return transformers.optimization.Adafactor(param, lr=lr, scale_parameter=False, relative_step=False)
+    else:
+
+        def optimizer(param):
+            return torch.optim.AdamW(param, lr=lr)
+
+    for epoch in range(1, args.epoch + 1):
+        logger.info(f"Epoch {epoch}/{args.epoch}")
+        if args.pmd:
+            program.train(train_set, c_warmup_iters=0, train_epoch_num=1, Optim=optimizer, device=cur_device)
+        else:
+            program.train(train_set, train_epoch_num=1, Optim=optimizer, device=cur_device)
+
+        train_loss = get_avg_loss(program, train_set, cur_device, "train")
+        eval_loss = get_avg_loss(program, eval_set, cur_device, "eval")
+        f1, accuracy = eval(program=program, test_set=eval_set, cur_device=cur_device, args=args)
+
         logger.info(f"Epoch: {epoch}")
-        logger.info(f"Loss: {loss}")
+        logger.info(f"Train Loss: {train_loss}")
+        logger.info(f"Eval Loss: {eval_loss}")
         logger.info(f"Dev Accuracy: {accuracy * 100}%")
-        if accuracy >= best_accuracy:
+        logger.info(f"Dev F1: {f1 * 100}%")
+        mlflow.log_metrics(
+            {
+                "train_loss": train_loss,
+                "eval_loss": eval_loss,
+                "eval_f1": f1,
+                "eval_accuracy": accuracy,
+            },
+            step=epoch,
+        )
+
+        if f1 >= best_f1:
             best_epoch = epoch
             best_accuracy = accuracy
-            # if old_file:
-            #     os.remove(old_file)
+            best_f1 = f1
+
             program_addition = ""
             if program_name == "PMD":
                 program_addition = "_beta_" + str(args.beta)
@@ -183,48 +200,47 @@ def train(program, train_set, eval_set, cur_device, limit, lr, check_epoch=1, pr
                 + "_model_"
                 + args.model
             )
-            program.save(os.path.join(args.results_path, new_file))
-
-    if cur_epoch < limit:
-        if args.pmd:
-            program.train(train_set, c_warmup_iters=0, train_epoch_num=check_epoch, Optim=optimizer, device=cur_device)
-        else:
-            program.train(train_set, train_epoch_num=check_epoch, Optim=optimizer, device=cur_device)
-        accuracy = eval(program, eval_set, cur_device, args)
-        logger.info(f"Epoch: {limit}")
-        logger.info(f"Dev Accuracy: {accuracy * 100}%")
-        if accuracy >= best_accuracy:
-            best_epoch = limit
-            # if old_file:
-            #     os.remove(old_file)
-            if program_name == "PMD":
-                program_addition = "_beta_" + str(args.beta)
-            else:
-                program_addition = "_size_" + str(args.sampling_size)
-            new_file = (
-                program_name
-                + "_"
-                + str(limit)
-                + "epoch"
-                + "_lr_"
-                + str(args.lr)
-                + program_addition
-                + "_model_"
-                + args.model
-            )
-
-            old_file = new_file
-            program.save(os.path.join(args.results_path, new_file))
+            model_path = os.path.join(args.results_path, new_file)
+            program.save(model_path)
+            logger.info(f"New best model saved to: {model_path}")
+            mlflow.log_artifact(model_path)
 
     logger.info(f"Best epoch {best_epoch}")
+    logger.info(f"Best eval Accuracy {best_accuracy * 100}%")
+    logger.info(f"Best eval F1 {best_f1 * 100}%")
+    mlflow.log_metrics(
+        {
+            "best_eval_f1": best_f1,
+            "best_eval_accuracy": best_accuracy,
+            "best_epoch": best_epoch,
+        }
+    )
+
+    if test_set:
+        logger.info("Final evaluation on test set")
+        f1, accuracy = eval(program=program, test_set=test_set, cur_device=cur_device, args=args)
+        logger.info(f"Final test Accuracy {accuracy * 100}%")
+        logger.info(f"Final test F1 {f1 * 100}%")
+        mlflow.log_metrics(
+            {
+                "final_test_f1": f1,
+                "final_test_accuracy": accuracy,
+            }
+        )
+
     return best_epoch
 
 
-def main(args):
+def main(args: Any) -> None:
     SEED = 382
     np.random.seed(SEED)
     random.seed(SEED)
     torch.manual_seed(SEED)
+
+    run_name = f"{args.model}_{datetime.now().strftime('%Y-%d-%m_%H:%M:%S')}"
+    logger.info(f"Starting run with id {run_name}")
+    mlflow.set_experiment("Temporal_FR")
+    mlflow.start_run(run_name=run_name)
 
     cuda_number = args.cuda
     if cuda_number == -1:
@@ -275,7 +291,7 @@ def main(args):
     )[:1]
 
     test_file = "tb_dense_test.json"
-    testing_set = TemporalReader.from_file(
+    test_set = TemporalReader.from_file(
         file_path=os.path.join(args.data_path, test_file), question_type="FR", batch_size=args.batch_size
     )[:1]
 
@@ -317,7 +333,7 @@ def main(args):
                 },
             )
 
-        eval(program, testing_set, cur_device, args)
+        eval(program=program, test_set=test_set, cur_device=cur_device, args=args)
 
     elif args.loaded_train:
         if args.model_change:
@@ -334,9 +350,7 @@ def main(args):
             )
             pretrain_dict = pretrain_model
             current_dict = program.model.state_dict()
-            # Filter out unnecessary keys
-            # pretrain_dict = {k: v for k, v in pretrain_dict.items() if k in current_dict}
-            # Loaded same parameters
+
             new_state_dict = {k: v if k not in pretrain_dict else pretrain_dict[k] for k, v in current_dict.items()}
             program.model.load_state_dict(new_state_dict)
         else:
@@ -351,6 +365,25 @@ def main(args):
                     "cuda:5": cur_device,
                 },
             )
-        train(program, training_set, eval_set, cur_device, args.epoch, args.lr, program_name=program_name, args=args)
+        train(
+            program=program,
+            train_set=training_set,
+            eval_set=eval_set,
+            cur_device=cur_device,
+            lr=args.lr,
+            program_name=program_name,
+            test_set=test_set,
+            args=args,
+        )
     else:
-        train(program, training_set, eval_set, cur_device, args.epoch, args.lr, program_name=program_name, args=args)
+        train(
+            program=program,
+            train_set=training_set,
+            eval_set=eval_set,
+            cur_device=cur_device,
+            lr=args.lr,
+            program_name=program_name,
+            test_set=test_set,
+            args=args,
+        )
+    mlflow.end_run()

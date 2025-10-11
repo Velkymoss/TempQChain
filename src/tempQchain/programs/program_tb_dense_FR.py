@@ -3,7 +3,7 @@ from typing import NamedTuple
 import torch
 from domiknows.program import SolverPOIProgram
 from domiknows.program.loss import NBCrossEntropyLoss
-from domiknows.program.lossprogram import PrimalDualProgram, SampleLossProgram
+from domiknows.program.lossprogram import LearningBasedProgram, PrimalDualProgram, SampleLossProgram
 from domiknows.program.metric import DatanodeCMMetric, MacroAverageTracker, PRF1Tracker, ValueTracker
 from domiknows.program.model.pytorch import SolverModel
 from domiknows.sensor.pytorch.learners import ModuleLearner
@@ -68,6 +68,7 @@ class QuestionData(NamedTuple):
         simultaneous_labels (torch.LongTensor): Tensor of labels indicating 'simultaneous' relations.
         vague_labels (torch.LongTensor): Tensor of labels indicating 'vague' relations.
     """
+
     story_contain: torch.Tensor  # shape: (batch_size, 1)
     questions: list[str]
     stories: list[str]
@@ -91,7 +92,7 @@ def program_declaration_tb_dense_fr(
     dropout: bool = False,
     constraints: bool = False,
     model: str = "bert",
-) -> PrimalDualProgram | SampleLossProgram | SolverPOIProgram:
+) -> LearningBasedProgram:
     program = None
 
     story["questions"] = ReaderSensor(keyword="questions")
@@ -187,7 +188,6 @@ def program_declaration_tb_dense_fr(
     # Model
     if model == "t5-adapter":
         t5_model_id = "google/flan-t5-base"
-        logger.info("Using", t5_model_id)
         question["input_ids"] = JointSensor(
             story_contain, "question", "story", forward=T5Tokenizer(t5_model_id), device=device
         )
@@ -234,7 +234,6 @@ def program_declaration_tb_dense_fr(
             device=device,
         )
     else:
-        logger.info("Using BERT")
         question["input_ids"] = JointSensor(story_contain, "question", "story", forward=BERTTokenizer(), device=device)
         clf1 = MultipleClassYN_Hidden.from_pretrained("bert-base-uncased", device=device, drp=dropout)
         question["hidden_layer"] = ModuleLearner("input_ids", module=clf1, device=device)
@@ -283,7 +282,6 @@ def program_declaration_tb_dense_fr(
     ]
 
     if constraints:
-        logger.info("Included constraints")
         inverse[inv_question1.reversed, inv_question2.reversed] = CompositionCandidateSensor(
             relations=(inv_question1.reversed, inv_question2.reversed), forward=check_symmetric, device=device
         )
@@ -298,7 +296,6 @@ def program_declaration_tb_dense_fr(
 
     infer_list = ["ILP", "local/argmax"]  # ['ILP', 'local/argmax']
     if pmd:
-        logger.info("Using PMD program")
         program = PrimalDualProgram(
             graph,
             SolverModel,
@@ -324,7 +321,6 @@ def program_declaration_tb_dense_fr(
             device=device,
         )
     else:
-        logger.info("Using Base program")
         program = SolverPOIProgram(
             graph,
             poi=poi_list,
@@ -339,7 +335,7 @@ def program_declaration_tb_dense_fr(
 
 def program_declaration_tb_dense_fr_T5(
     device, *, pmd=False, beta=0.5, sampling=False, sampleSize=1, dropout=False, constraints=False, spartun=True
-) -> PrimalDualProgram | SampleLossProgram | SolverPOIProgram:
+) -> LearningBasedProgram:
     story["questions"] = ReaderSensor(keyword="questions")
     story["stories"] = ReaderSensor(keyword="stories")
     story["relations"] = ReaderSensor(keyword="relation")
@@ -491,7 +487,7 @@ def program_declaration_tb_dense_fr_T5(
 
 def program_declaration_tb_dense_fr_T5_v2(
     device, *, pmd=False, beta=0.5, sampling=False, sampleSize=1, dropout=False, constraints=False, spartun=True
-) -> PrimalDualProgram | SampleLossProgram | SolverPOIProgram:
+) -> LearningBasedProgram:
     story["questions"] = ReaderSensor(keyword="questions")
     story["stories"] = ReaderSensor(keyword="stories")
     story["relations"] = ReaderSensor(keyword="relation")
@@ -638,7 +634,7 @@ def program_declaration_tb_dense_fr_T5_v2(
 
 def program_declaration_tb_dense_fr_T5_v3(
     device, *, pmd=False, beta=0.5, sampling=False, sampleSize=1, dropout=False, constraints=False, spartun=True
-) -> PrimalDualProgram | SampleLossProgram | SolverPOIProgram:
+) -> LearningBasedProgram:
     program = None
 
     story["questions"] = ReaderSensor(keyword="questions")
