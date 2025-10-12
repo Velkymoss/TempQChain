@@ -7,8 +7,8 @@ import tqdm
 from domiknows.program.model.base import Mode
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, precision_score, recall_score
 
-from src.tempQchain.programs.program_tb_dense_YN import program_declaration
 from tempQchain.logger import get_logger
+from tempQchain.programs.program_tb_dense_YN import program_declaration
 from tempQchain.readers.temporal_reader import TemporalReader
 
 logger = get_logger(__name__)
@@ -37,9 +37,8 @@ def eval(program, testing_set, cur_device, args):
             accuracy += 1 if pred_argmax == label else 0
         verify_constraints = datanode.verifyResultsLC()
         count_verify = 0
-        if verify_constraints:
-            for lc in verify_constraints:
-                count_verify += verify_constraints[lc]["satisfied"]
+        for lc in verify_constraints:
+            count_verify += verify_constraints[lc]["satisfied"]
         satisfy_constraint_rate += count_verify / len(verify_constraints)
     satisfy_constraint_rate /= count_datanode
     accuracy /= count
@@ -48,28 +47,6 @@ def eval(program, testing_set, cur_device, args):
     print(
         "Program:", "Primal Dual" if args.pmd else "Sampling Loss" if args.sampling else "DomiKnowS", file=result_file
     )
-    if not args.loaded:
-        print("Training info", file=result_file)
-        print("Batch Size:", args.batch_size, file=result_file)
-        print("Epoch:", args.epoch, file=result_file)
-        print("Learning Rate:", args.lr, file=result_file)
-        print("Beta:", args.beta, file=result_file)
-        print("Sampling Size:", args.sampling_size, file=result_file)
-    else:
-        print("Loaded Model Name:", args.loaded_file, file=result_file)
-    print("Evaluation File:", args.test_file, file=result_file)
-    print("Accuracy:", accuracy, file=result_file)
-    print("Constraints Satisfied rate:", satisfy_constraint_rate, "%", file=result_file)
-    print("Reasoning step:", args.reasoning_steps, file=result_file)
-    print("Precious:", precision_score(actual, pred, average=None), file=result_file)
-    print("Recall:", recall_score(actual, pred, average=None), file=result_file)
-    print("F1:", f1_score(actual, pred, average=None), file=result_file)
-    print("F1 Macro:", f1_score(actual, pred, average="macro"), file=result_file)
-    print("Confusion Matrix:\n", confusion_matrix(actual, pred), file=result_file)
-    result_file.close()
-
-    # df = pd.DataFrame(result_csv)
-    # df.to_csv("result.csv")
 
 
 def train(program, train_set, eval_set, cur_device, limit, lr, program_name="DomiKnow", args=None):
@@ -211,7 +188,6 @@ def train(program, train_set, eval_set, cur_device, limit, lr, program_name="Dom
 
 
 def main(args):
-    logger.info("Use chains is %s", args.use_chains)
     SEED = 382
     np.random.seed(SEED)
     random.seed(SEED)
@@ -231,17 +207,17 @@ def main(args):
     train_file = "tb_dense_train.json"
     training_set = TemporalReader.from_file(
         file_path=os.path.join(args.data_path, train_file), question_type="YN", batch_size=args.batch_size
-    )
+    )[:1]
 
     test_file = "tb_dense_test.json"
     testing_set = TemporalReader.from_file(
         file_path=os.path.join(args.data_path, test_file), question_type="YN", batch_size=args.batch_size
-    )
+    )[:1]
 
     eval_file = "tb_dense_dev.json"
     eval_set = TemporalReader.from_file(
         file_path=os.path.join(args.data_path, eval_file), question_type="YN", batch_size=args.batch_size
-    )
+    )[:1]
 
     program_name = "PMD" if args.pmd else "Sampling" if args.sampling else "Base"
     program = program_declaration(
@@ -291,3 +267,4 @@ def main(args):
         train(program, training_set, eval_set, cur_device, args.epoch, args.lr, program_name=program_name, args=args)
     else:
         train(program, training_set, eval_set, cur_device, args.epoch, args.lr, program_name=program_name, args=args)
+    eval(program, testing_set, cur_device, args)

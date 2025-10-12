@@ -106,19 +106,27 @@ class Question(BaseModel):
     ) -> tuple[str, BatchQuestion]:
         if self.q_type == "FR":
             question, _ = create_fr((intermediate_fact.event1, intermediate_fact.event2), intermediate_fact.relation)
+            batch_question = BatchQuestion(
+                question_text=question,
+                story_text=story.story_text,
+                q_type=self.q_type,
+                candidate_answers=self.candidate_answers,
+                relation_info="",
+                answer=intermediate_fact.relation,
+                question_id=id,
+            )
         else:
             template = get_temporal_question(intermediate_fact.relation)
             question = template.substitute(event1=intermediate_fact.event1, event2=intermediate_fact.event2)
-
-        batch_question = BatchQuestion(
-            question_text=question,
-            story_text=story.story_text,
-            q_type=self.q_type,
-            candidate_answers=self.candidate_answers,
-            relation_info="",
-            answer=intermediate_fact.relation,
-            question_id=id,
-        )
+            batch_question = BatchQuestion(
+                question_text=question,
+                story_text=story.story_text,
+                q_type=self.q_type,
+                candidate_answers=self.candidate_answers,
+                relation_info="",
+                answer="Yes",
+                question_id=id,
+            )
         return intermediate_fact.key, batch_question
 
     def create_batch_questions(
@@ -319,15 +327,17 @@ class TemporalReader:
         question_type: str,
         batch_size: int,
         domiknows_format: bool = True,
-        use_int_labels: bool = True,
     ) -> TemporalReader | list[dict[str, str]]:
         with open(file_path, "r") as f:
             file = json.load(f)
         dataset = cls(data=file["data"], question_type=question_type, batch_size=batch_size)
         dataset.create_batches()
-        if domiknows_format:
-            return dataset.convert_to_domiknows_format(use_int_labels=use_int_labels)
-        return dataset
+        if domiknows_format and question_type == "FR":
+            return dataset.convert_to_domiknows_format(use_int_labels=True)
+        elif domiknows_format and question_type == "YN":
+            return dataset.convert_to_domiknows_format(use_int_labels=False)
+        else:
+            return dataset
 
     def get_statistics(self) -> dict[str, Any]:
         if not self.batches:

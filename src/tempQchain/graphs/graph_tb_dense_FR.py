@@ -234,27 +234,22 @@ with Graph("temporal_QA_rule") as graph:
 
     output_for_loss = question(name="output_for_loss")
 
-    # opposite concepts
-    exactL(before, after)
-    exactL(includes, is_included)
+    ifL(
+            question("q"),
+            exactL(
+                before(path=("q",)),
+                after(path=("q",)),
+                simultaneous(path=("q",)),
+                is_included(path=("q",)),
+                includes(path=("q",)),
+                vague(path=("q",)),
+            ),
+        )
 
     # Inverse Constrains
     inverse = Concept(name="inverse")
     inv_question1, inv_question2 = inverse.has_a(arg1=question, arg2=question)
 
-
-    inverse_list1 = [(before, after), (includes, is_included)]
-
-    for ans1, ans2 in inverse_list1:
-        ifL(
-            andL(inverse("s"), ans1(path=("s", inv_question1))),
-            ans2(path=("s", inv_question2)),
-        )
-
-        ifL(
-            andL(inverse("s"), ans2(path=("s", inv_question1))),
-            ans1(path=("s", inv_question2)),
-        )
 
     # symmetric - if q1 has label, q2 has same label
     inverse_list2 = [(simultaneous, simultaneous), (vague, vague)]
