@@ -74,30 +74,26 @@ class MultipleClassYN(BertPreTrainedModel):
 
         return output
 
+class ModernBert(nn.Module):
+    def __init__(self, model_name="answerdotai/ModernBERT-base", num_classes=2, drp=False, device="cpu"):
+        super().__init__()
+        
+        self.bert = ModernBertModel.from_pretrained(model_name)
+        self.hidden_size = self.bert.config.hidden_size
 
-class ModernBert(ModernBertPreTrainedModel):
-    def __init__(self, config, device="cpu", drp=False):
-        super().__init__(config)
-
-        if drp:
-            config.dropout = 0.0
-
-        self.cur_device = device
-        self.bert = ModernBertModel(config)
-        dropout_prob = 0.0 if drp else getattr(config, "classifier_dropout", 0.0)
+        dropout_prob = 0.0 if drp else getattr(self.bert.config, "classifier_dropout", 0.0)
         self.dropout = nn.Dropout(dropout_prob)
-        self.num_classes = 2
-        self.classifier = nn.Linear(config.hidden_size, self.num_classes)
-        self.sigmoid = nn.Sigmoid()
-        self.softmax = nn.Softmax()
+
+        self.num_classes = num_classes
+        self.classifier = nn.Linear(self.hidden_size, self.num_classes)
+        self.device = device
+        self.to(device)
 
     def forward(self, input_ids):
         outputs = self.bert(input_ids)
         pooled_output = outputs[1]
         pooled_output = self.dropout(pooled_output)
-        output = self.classifier(pooled_output)
-
-        return output
+        return self.classifier(pooled_output)
 
 
 class MultipleClassYNRoberta(RobertaPreTrainedModel):

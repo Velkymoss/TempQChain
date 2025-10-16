@@ -237,7 +237,7 @@ def program_declaration_tb_dense_fr(
         question["input_ids"] = JointSensor(
             story_contain, "question", "story", forward=ModernBERTTokenizer(), device=device
         )
-        clf1 = ModernBert.from_pretrained("answerdotai/ModernBERT-base", device=device, drp=dropout)
+        clf1 = ModernBert(device=device, drp=dropout)
         question["hidden_layer"] = ModuleLearner("input_ids", module=clf1, device=device)
 
         question[after] = ModuleLearner(
