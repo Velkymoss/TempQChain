@@ -37,6 +37,19 @@ class RoBERTaTokenizer:
         return torch.LongTensor(input_ids)
 
 
+class ModernBERTTokenizer:
+    def __init__(self):
+        self.tokenizer = AutoTokenizer.from_pretrained("answerdotai/ModernBERT-base")
+
+    def __call__(self, _, question, story):
+        encoded_input = self.tokenizer(
+            question, story, padding="max_length", truncation=True, max_length=5000, return_tensors=None
+        )
+
+        input_ids = encoded_input["input_ids"]
+        return torch.LongTensor(input_ids)
+
+
 class MultipleClassYN(BertPreTrainedModel):
     def __init__(self, config, device="cpu", drp=False):
         super().__init__(config)

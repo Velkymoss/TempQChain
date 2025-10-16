@@ -32,18 +32,17 @@ from tempQchain.graphs.graph_tb_dense_FR import (
 )
 from tempQchain.logger import get_logger
 from tempQchain.programs.models import (
-    BERTTokenizer,
     ClassifyLabelT5,
     ClassifyLayer,
+    ModernBert,
+    ModernBERTTokenizer,
     MultipleClassFRT5,
-    MultipleClassYN_Hidden,
     T5LossFunction,
     T5Tokenizer,
     T5TokenizerDecoder,
     T5TokenizerInput,
     T5TokenizerOutput,
     T5WithLora,
-    ModernBert
 )
 from tempQchain.programs.utils import check_symmetric, check_transitive, to_float_list, to_int_list
 
@@ -235,8 +234,10 @@ def program_declaration_tb_dense_fr(
             device=device,
         )
     else:
-        question["input_ids"] = JointSensor(story_contain, "question", "story", forward=BERTTokenizer(), device=device)
-        clf1 = ModernBert.from_pretrained("ModernBERT-base-uncased", device=device, drp=dropout)
+        question["input_ids"] = JointSensor(
+            story_contain, "question", "story", forward=ModernBERTTokenizer(), device=device
+        )
+        clf1 = ModernBert.from_pretrained("answerdotai/ModernBERT-base", device=device, drp=dropout)
         question["hidden_layer"] = ModuleLearner("input_ids", module=clf1, device=device)
 
         question[after] = ModuleLearner(
