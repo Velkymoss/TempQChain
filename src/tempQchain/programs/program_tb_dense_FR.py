@@ -43,6 +43,7 @@ from tempQchain.programs.models import (
     T5TokenizerInput,
     T5TokenizerOutput,
     T5WithLora,
+    ModernBert
 )
 from tempQchain.programs.utils import check_symmetric, check_transitive, to_float_list, to_int_list
 
@@ -235,7 +236,7 @@ def program_declaration_tb_dense_fr(
         )
     else:
         question["input_ids"] = JointSensor(story_contain, "question", "story", forward=BERTTokenizer(), device=device)
-        clf1 = MultipleClassYN_Hidden.from_pretrained("bert-base-uncased", device=device, drp=dropout)
+        clf1 = ModernBert.from_pretrained("ModernBERT-base-uncased", device=device, drp=dropout)
         question["hidden_layer"] = ModuleLearner("input_ids", module=clf1, device=device)
 
         question[after] = ModuleLearner(
