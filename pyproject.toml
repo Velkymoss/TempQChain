@@ -3,7 +3,7 @@ name = "tempQchain"
 version = "0.1.0"
 description = "An adaptation of the Q-chain approach used for Spartun"
 authors = [{ name = "Max Moser", email = "maxmoser.15@gmail.com" }]
-requires-python = ">=3.12.0"
+requires-python = "==3.11.11"
 readme = "README.md"
 dependencies = [
     "domiknows==0.533",
