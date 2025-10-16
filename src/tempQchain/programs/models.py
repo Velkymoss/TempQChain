@@ -84,7 +84,8 @@ class ModernBert(ModernBertPreTrainedModel):
 
         self.cur_device = device
         self.bert = ModernBertModel(config)
-        self.dropout = nn.Dropout(config.dropout)
+        dropout_prob = 0.0 if drp else getattr(config, "classifier_dropout", 0.0)
+        self.dropout = nn.Dropout(dropout_prob)
         self.num_classes = 2
         self.classifier = nn.Linear(config.hidden_size, self.num_classes)
         self.sigmoid = nn.Sigmoid()
