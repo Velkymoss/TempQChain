@@ -12,7 +12,7 @@ import transformers
 from domiknows.program.lossprogram import LearningBasedProgram
 from sklearn.metrics import accuracy_score, f1_score
 
-from tempQchain.graphs.graph import answer_class
+from tempQchain.graphs.graph_fr import answer_class
 from tempQchain.logger import get_logger
 from tempQchain.programs.program_fr import (
     program_declaration_tb_dense_fr,
@@ -254,17 +254,17 @@ def main(args: Any) -> None:
     train_file = "tb_dense_train.json"
     training_set = TemporalReader.from_file(
         file_path=os.path.join(args.data_path, train_file), question_type="FR", batch_size=args.batch_size
-    )[:2]
+    )
 
     test_file = "tb_dense_test.json"
     test_set = TemporalReader.from_file(
         file_path=os.path.join(args.data_path, test_file), question_type="FR", batch_size=args.batch_size
-    )[:2]
+    )
 
     eval_file = "tb_dense_dev.json"
     eval_set = TemporalReader.from_file(
         file_path=os.path.join(args.data_path, eval_file), question_type="FR", batch_size=args.batch_size
-    )[:2]
+    )
 
     program_name = "PMD" if args.pmd else "Sampling" if args.sampling else "Base"
 
