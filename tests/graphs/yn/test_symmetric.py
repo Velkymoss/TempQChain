@@ -3,9 +3,9 @@ from domiknows.program import SolverPOIProgram
 from domiknows.sensor.pytorch.relation_sensors import CompositionCandidateSensor
 from domiknows.sensor.pytorch.sensors import JointSensor, ReaderSensor
 
-from tests.graphs.conftest import assert_local_softmax, check_symmetric
-from tests.graphs.yn.conftest import YnSpecificDummyLearner, assert_ilp_result_yn, make_question
-from tests.graphs.yn.graph_yn import get_graph
+from tests.graphs.conftest import assert_ilp_result, assert_local_softmax, check_symmetric
+from tests.graphs.yn.conftest import YnSpecificDummyLearner, make_question
+from tests.graphs.yn.graph import get_graph
 
 
 def test_symmetric(device):
@@ -64,13 +64,21 @@ def test_symmetric(device):
     program = SolverPOIProgram(graph=graph, poi=poi_list, device=device)
 
     for datanode in program.populate(dataset=synthetic_dataset):
+        print("\n=== BEFORE ILP INFERENCE ===")
+        print(f"Number of questions: {len(datanode.getChildDataNodes())}")
         for i, q_node in enumerate(datanode.getChildDataNodes()):
+            print(f"\nQuestion {i}:")
+            print(f"  Dummy Prediction: {q_node.getAttribute(answer_class, 'local/softmax')}")
             if i == 0:
                 assert_local_softmax(q_node, answer_class, torch.tensor([0.5, 0.5], device=device), device=device)
             else:
                 assert_local_softmax(q_node, answer_class, torch.tensor([0.0, 1.0], device=device), device=device)
-
+        print("\n=== RUNNING ILP INFERENCE ===")
         datanode.inferILPResults()
 
+        print("\n=== AFTER ILP INFERENCE ===")
+        print("\nILP predictions (after constraint enforcement):")
         for i, q_node in enumerate(datanode.getChildDataNodes()):
-            assert_ilp_result_yn(q_node, answer_class, torch.tensor([0.0, 1.0], device=device), device=device)
+            print(f"\nQuestion {i}:")
+            print(f"Inferred constraint: {q_node.getAttribute(answer_class, 'ILP')}")
+            assert_ilp_result(q_node, answer_class, torch.tensor([0.0, 1.0], device=device), device=device)

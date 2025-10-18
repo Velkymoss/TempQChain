@@ -8,7 +8,7 @@ from domiknows.sensor.pytorch.learners import ModuleLearner
 from domiknows.sensor.pytorch.relation_sensors import CompositionCandidateSensor
 from domiknows.sensor.pytorch.sensors import FunctionalSensor, JointSensor, ReaderSensor
 
-from tempQchain.graphs.graph import (
+from tempQchain.graphs.graph_fr import (
     answer_class,
     graph,
     inv_question1,

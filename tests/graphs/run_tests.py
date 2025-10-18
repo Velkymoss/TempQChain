@@ -17,7 +17,7 @@ def run_test(test_file: str) -> bool:
     print()
 
     result = subprocess.run(
-        [sys.executable, "-m", "pytest", test_file, "-v"],
+        [sys.executable, "-m", "pytest", test_file, "-v", "-s"],
         capture_output=False,
     )
 

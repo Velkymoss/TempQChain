@@ -5,8 +5,15 @@ import torch
 @pytest.fixture(scope="session")
 def device():
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    #return torch.device("cpu")
+    # return torch.device("cpu")
 
+
+def str_to_int_list(x, device=None) -> torch.LongTensor:
+    return (
+        torch.LongTensor([int(i) for i in x]).to(device)
+        if device is not None
+        else torch.LongTensor([int(i) for i in x])
+    )
 
 
 def check_symmetric(**kwargs) -> bool:
@@ -53,6 +60,15 @@ def check_transitive(**kwargs) -> bool:
 def assert_local_softmax(q_node, label, expected_tensor, device=None):
     """Assert local/softmax predictions match expected values"""
     result = q_node.getAttribute(label, "local/softmax")
+    if device is not None:
+        result = result.to(device)
+        expected_tensor = expected_tensor.to(device)
+    assert torch.allclose(result, expected_tensor, atol=1e-4), f"Label {label}: Expected {expected_tensor}, got {result}"
+
+
+def assert_ilp_result(q_node, label, expected_tensor, device=None):
+    """Assert ILP predictions match expected value"""
+    result = q_node.getAttribute(label, "ILP")
     if device is not None:
         result = result.to(device)
         expected_tensor = expected_tensor.to(device)

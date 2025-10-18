@@ -21,7 +21,7 @@ from tempQchain.graphs.graph_tb_dense_FR import (
     vague,
 )
 from tempQchain.logger import get_logger
-from tempQchain.programs.program import (
+from tempQchain.programs.program_fr import (
     program_declaration_tb_dense_fr,
 )
 from tempQchain.readers.temporal_reader import TemporalReader
