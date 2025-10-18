@@ -11,3 +11,5 @@ debug/
 .coverage
 data/*
 !data/README.md
+models/
+mlruns/
