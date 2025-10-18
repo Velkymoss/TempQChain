@@ -60,12 +60,3 @@ def make_question(
         ids,
         num_labels,
     )
-
-
-def assert_ilp_result_yn(q_node, label, expected_tensor, device=None):
-    """Assert ILP predictions match expected value"""
-    result = q_node.getAttribute(label, "ILP")
-    if device is not None:
-        result = result.to(device)
-        expected_tensor = expected_tensor.to(device)
-    assert torch.allclose(result, expected_tensor), f"Label {label}: Expected {expected_tensor}, got {result}"

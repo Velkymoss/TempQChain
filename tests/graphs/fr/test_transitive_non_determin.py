@@ -3,40 +3,36 @@ from domiknows.program import SolverPOIProgram
 from domiknows.sensor.pytorch.relation_sensors import CompositionCandidateSensor
 from domiknows.sensor.pytorch.sensors import JointSensor, ReaderSensor
 
-from tests.graphs.conftest import assert_local_softmax, check_transitive
-from tests.graphs.fr.conftest import (
-    DummyLearner,
-    QuestionSpecificDummyLearner,
-    assert_ilp_labels_sum_to_one,
-    assert_ilp_result,
-    make_question,
-)
-from tests.graphs.fr.graph_fr import get_graph
+from tests.graphs.conftest import assert_ilp_result, assert_local_softmax, check_transitive
+from tests.graphs.fr.conftest import FrSpecificDummyLearner, make_question
+from tests.graphs.fr.graph import get_graph
 
 
-def test_transitive_non_determin(device):
+def test_transitive(device):
     (
         graph,
         story,
         question,
         transitive,
         inverse,
-        before,
-        after,
-        simultaneous,
-        is_included,
-        includes,
-        vague,
+        answer_class,
         story_contain,
         tran_quest1,
         tran_quest2,
         tran_quest3,
-        inv_question1,
-        inv_question2,
+        inv_quest1,
+        inv_quest2,
     ) = get_graph(transitive_non_determin=True)
-    graph.detach()
 
-    labels = [after, before, includes, is_included, simultaneous, vague]
+    synthetic_dataset = [
+        {
+            "questions": "A B?@@B C?@@A C?",
+            "stories": "story@@story@@story",
+            "relation": "@@@@transitive,0,1",
+            "question_ids": "0@@1@@2",
+            "labels": "1@@2@@5",
+        }
+    ]
 
     story["questions"] = ReaderSensor(keyword="questions")
     story["stories"] = ReaderSensor(keyword="stories")
@@ -44,19 +40,7 @@ def test_transitive_non_determin(device):
     story["question_ids"] = ReaderSensor(keyword="question_ids")
     story["labels"] = ReaderSensor(keyword="labels")
 
-    question[
-        story_contain,
-        "question",
-        "story",
-        "relation",
-        "id",
-        "after_label",
-        "before_label",
-        "includes_label",
-        "is_included_label",
-        "simultaneous_label",
-        "vague_label",
-    ] = JointSensor(
+    question[story_contain, "question", "story", "relation", "id", "label"] = JointSensor(
         story["questions"],
         story["stories"],
         story["relations"],
@@ -66,76 +50,65 @@ def test_transitive_non_determin(device):
         device=device,
     )
 
-    question[before] = QuestionSpecificDummyLearner(story_contain, predictions=[True, False, False], device=device)
-    question[includes] = QuestionSpecificDummyLearner(story_contain, predictions=[False, True, False], device=device)
-    question[after] = DummyLearner(story_contain, positive=False, device=device)
-    question[is_included] = DummyLearner(story_contain, positive=False, device=device)
-    question[simultaneous] = DummyLearner(story_contain, positive=False, device=device)
-    question[vague] = DummyLearner(story_contain, positive=False, device=device)
-
-    synthetic_dataset = [
-        {
-            "questions": "A B?@@B C?@@A C?",
-            "stories": "story@@story@@story",
-            "relation": "@@@@transitive,0,1",
-            "question_ids": "0@@1@@2",
-            "labels": "2@@3@@32",
-        }
-    ]
-
-    poi_list = [
-        question,
-        after,
-        before,
-        includes,
-        is_included,
-        simultaneous,
-        vague,
-    ]
+    question[answer_class] = FrSpecificDummyLearner(story_contain, num_labels=6, predictions=[1, 2, -1], device=device)
 
     transitive[tran_quest1.reversed, tran_quest2.reversed, tran_quest3.reversed] = CompositionCandidateSensor(
         relations=(tran_quest1.reversed, tran_quest2.reversed, tran_quest3.reversed),
         forward=check_transitive,
         device=device,
     )
-    poi_list.extend([transitive])
+
+    poi_list = [question, answer_class, transitive]
 
     program = SolverPOIProgram(graph=graph, poi=poi_list, device=device)
 
     for datanode in program.populate(dataset=synthetic_dataset):
+        print("\n=== BEFORE ILP INFERENCE ===")
+        print(f"Number of questions: {len(datanode.getChildDataNodes())}")
         for i, q_node in enumerate(datanode.getChildDataNodes()):
+            print(f"\nQuestion {i}:")
+            print(f"  Dummy Prediction: {q_node.getAttribute(answer_class, 'local/softmax')}")
             if i == 0:
-                for label in labels:
-                    if label == before:
-                        assert_local_softmax(q_node, label, torch.tensor([0.0, 1.0], device=device))
-                    else:
-                        assert_local_softmax(q_node, label, torch.tensor([1.0, 0.0], device=device))
+                assert_local_softmax(
+                    q_node, answer_class, torch.tensor([0.0, 1.0, 0.0, 0.0, 0.0, 0.0], device=device), device=device
+                )
             elif i == 1:
-                for label in labels:
-                    if label == includes:
-                        assert_local_softmax(q_node, label, torch.tensor([0.0, 1.0], device=device))
-                    else:
-                        assert_local_softmax(q_node, label, torch.tensor([1.0, 0.0], device=device))
+                assert_local_softmax(
+                    q_node, answer_class, torch.tensor([0.0, 0.0, 1.0, 0.0, 0.0, 0.0], device=device), device=device
+                )
             else:
-                for label in labels:
-                    assert_local_softmax(q_node, label, torch.tensor([1.0, 0.0], device=device))
+                assert_local_softmax(
+                    q_node,
+                    answer_class,
+                    torch.tensor([0.1667, 0.1667, 0.1667, 0.1667, 0.1667, 0.1667], device=device),
+                    device=device,
+                )
 
+        print("\n=== RUNNING ILP INFERENCE ===")
         datanode.inferILPResults()
 
+        print("\n=== AFTER ILP INFERENCE ===")
+        print("\nILP predictions (after constraint enforcement):")
         for i, q_node in enumerate(datanode.getChildDataNodes()):
+            print(f"\nQuestion {i}:")
+            print(f"Inferred constraint: {q_node.getAttribute(answer_class, 'ILP')}")
             if i == 0:
-                for label in labels:
-                    if label == before:
-                        assert_ilp_result(q_node, label, 1.0)
-                    else:
-                        assert_ilp_result(q_node, label, 0.0)
+                assert_ilp_result(
+                    q_node, answer_class, torch.tensor([0.0, 1.0, 0.0, 0.0, 0.0, 0.0], device=device), device=device
+                )
             elif i == 1:
-                for label in labels:
-                    if label == includes:
-                        assert_ilp_result(q_node, label, 1.0)
-                    else:
-                        assert_ilp_result(q_node, label, 0.0)
+                assert_ilp_result(
+                    q_node, answer_class, torch.tensor([0.0, 0.0, 1.0, 0.0, 0.0, 0.0], device=device), device=device
+                )
             else:
-                for label in [after, is_included, simultaneous]:
-                    assert_ilp_result(q_node, label, 0.0)
-                assert_ilp_labels_sum_to_one(q_node, [before, includes, vague])
+                result = q_node.getAttribute(answer_class, "ILP")
+                if device is not None:
+                    result = result.to(device)
+
+                indices = [1, 2, 5]
+                assert torch.any(torch.isclose(result[indices], torch.tensor(1.0, device=device))), (
+                    f"Expected one of indices {indices} to be 1. Got: {result[indices]}"
+                )
+                assert torch.isclose(result.sum(), torch.tensor(1.0, device=device), atol=1e-4), (
+                    f"Inferred results should sum to 1, got {result.sum()}"
+                )

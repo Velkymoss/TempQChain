@@ -10,6 +10,14 @@ def to_float_list(x):
     return torch.Tensor([float(i) for i in x])
 
 
+def str_to_int_list(x) -> torch.LongTensor:
+    return torch.LongTensor([int(i) for i in x])
+
+
+def read_label(_, label):
+    return label
+
+
 def check_symmetric(arg1: DataNode, arg2: DataNode) -> bool:
     if arg1 == arg2:
         return False
@@ -46,7 +54,7 @@ def check_transitive(arg11: DataNode, arg22: DataNode, arg33: DataNode) -> bool:
         return False
     # exmple of relation_describe: ['transitive', '1', '4']
     relation_describe = relation_arg3.split(",")
-    
+
     if relation_describe[0] == "transitive":
         qid1 = arg11.getAttribute("id").item()
         qid2 = arg22.getAttribute("id").item()

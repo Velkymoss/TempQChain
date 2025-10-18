@@ -12,20 +12,10 @@ import transformers
 from domiknows.program.lossprogram import LearningBasedProgram
 from sklearn.metrics import accuracy_score, f1_score
 
-from tempQchain.graphs.graph_tb_dense_FR import (
-    after,
-    before,
-    includes,
-    is_included,
-    simultaneous,
-    vague,
-)
+from tempQchain.graphs.graph_fr import answer_class
 from tempQchain.logger import get_logger
-from tempQchain.programs.program_tb_dense_FR import (
+from tempQchain.programs.program_fr import (
     program_declaration_tb_dense_fr,
-    program_declaration_tb_dense_fr_T5,
-    program_declaration_tb_dense_fr_T5_v2,
-    program_declaration_tb_dense_fr_T5_v3,
 )
 from tempQchain.readers.temporal_reader import TemporalReader
 from tempQchain.utils import get_avg_loss
@@ -34,7 +24,7 @@ warnings.filterwarnings("ignore")
 
 logger = get_logger(__name__)
 
-LABEL_STRINGS = ["before", "after", "includes", "is_included", "simultaneous", "vague"]
+LABEL_STRINGS = ["after", "before", "includes", "is_included", "simultaneous", "vague"]
 
 
 def eval(
@@ -47,20 +37,8 @@ def eval(
     if args.loaded:
         logger.info(f"Loaded Model Name: {args.loaded_file}")
 
-    all_labels = [
-        before,
-        after,
-        includes,
-        is_included,
-        simultaneous,
-        vague,
-    ]
-
-    pred_list = []
-    pred_set = set()
-
-    all_true = []
-    all_pred = []
+    labels = []
+    predictions = []
 
     if args.constraints:
         total_constraint_sat = 0
@@ -68,23 +46,11 @@ def eval(
 
     for datanode in tqdm.tqdm(program.populate(test_set, device=cur_device), "Checking f1/accuracy..."):
         for question in datanode.getChildDataNodes():
-            pred_set.clear()
-            pred_list.clear()
+            label = int(question.getAttribute(answer_class, "label"))
+            labels.append(label)
+            prediction = int(torch.argmax(question.getAttribute(answer_class, "local/argmax")))
+            predictions.append(prediction)
 
-            for ind, label in enumerate(all_labels):
-                pred = question.getAttribute(label, "local/softmax")
-                if pred.argmax().item() == 1:
-                    pred_set.add(ind)
-                pred_list.append(pred[1].item())
-            true_labels = []
-            pred_labels = []
-            for ind, label_ind in enumerate(all_labels):
-                label = question.getAttribute(label_ind, "label").item()
-                pred = 1 if ind in pred_set else 0
-                true_labels.append(label)
-                pred_labels.append(pred)
-            all_true.append(true_labels)
-            all_pred.append(pred_labels)
         if args.constraints:
             verify_constraints = datanode.verifyResultsLC()
 
@@ -100,11 +66,11 @@ def eval(
                     total_constraint_sat += satisfied_val + if_satisfied_val
                     num_constraints += 2
 
-    accuracy = accuracy_score(all_true, all_pred)
-    f1 = f1_score(all_true, all_pred, average="macro")
+    accuracy = accuracy_score(labels, predictions)
+    f1 = f1_score(labels, predictions, average="macro")
     if args.constraints:
         overall_constraint_rate = total_constraint_sat / num_constraints if num_constraints else 100
-    f1_per_class = f1_score(all_true, all_pred, average=None)
+    f1_per_class = f1_score(labels, predictions, average=None)
     return (
         round(f1 * 100, dec),
         round(accuracy * 100, dec),
@@ -127,7 +93,7 @@ def train(
     best_epoch = 0
 
     logger.info("Starting FR training...")
-    logger.info(f"Model: {args.model}")
+    logger.info("Model: Modern Bert Base")
     logger.info("Using Hyperparameters:")
     logger.info(f"Learning Rate: {args.lr}")
     logger.info(f"Batch Size: {args.batch_size}")
@@ -143,7 +109,7 @@ def train(
     if args.use_mlflow:
         mlflow.log_params(
             {
-                "model": args.model,
+                "model": "Modern Bert Base",
                 "learning_rate": args.lr,
                 "batch_size": args.batch_size,
                 "pmd": args.pmd,
@@ -154,7 +120,6 @@ def train(
                 "sampling_size": args.sampling_size if args.sampling else None,
                 "dropout": args.dropout,
                 "optimizer": args.optim,
-                "version": args.version if args.model == "t5-adapter" else None,
             }
         )
 
@@ -216,7 +181,7 @@ def train(
                 + str(args.lr)
                 + program_addition
                 + "_model_"
-                + args.model
+                + "modernbert"
             )
             model_path = os.path.join(args.results_path, new_file)
             program.save(model_path)
@@ -265,7 +230,7 @@ def main(args: Any) -> None:
     torch.manual_seed(SEED)
 
     if args.use_mlflow:
-        run_name = f"{args.model}_{datetime.now().strftime('%Y-%d-%m_%H:%M:%S')}"
+        run_name = f"modernbert_{datetime.now().strftime('%Y-%d-%m_%H:%M:%S')}"
         logger.info(f"Starting run with id {run_name}")
         mlflow.set_experiment("Temporal_FR")
         mlflow.start_run(run_name=run_name)
@@ -276,42 +241,15 @@ def main(args: Any) -> None:
     else:
         cur_device = "cuda:" + str(cuda_number) if torch.cuda.is_available() else "cpu"
 
-    if args.model == "t5-adapter":
-        logger.info("call T5")
-        program_declaration_function = None
-        if args.version == 2:
-            program_declaration_function = program_declaration_tb_dense_fr_T5_v2
-        elif args.version == 3:
-            program_declaration_function = program_declaration_tb_dense_fr_T5_v3
-        elif args.version == 4:
-            # program_declaration_function = program_declaration_tb_dense_fr_T5_v4
-            raise NotImplementedError("Version 4 is not implemented yet.")
-        elif args.version == 5:
-            # program_declaration_function = program_declaration_tb_dense_fr_T5_v5
-            raise NotImplementedError("Version 5 is not implemented yet.")
-        else:
-            program_declaration_function = program_declaration_tb_dense_fr_T5
-
-        program = program_declaration_function(
-            cur_device,
-            pmd=args.pmd,
-            beta=args.beta,
-            sampling=args.sampling,
-            sampleSize=args.sampling_size,
-            dropout=args.dropout,
-            constraints=args.constraints,
-        )
-    else:
-        program = program_declaration_tb_dense_fr(
-            cur_device,
-            pmd=args.pmd,
-            beta=args.beta,
-            sampling=args.sampling,
-            sampleSize=args.sampling_size,
-            dropout=args.dropout,
-            constraints=args.constraints,
-            model=args.model,
-        )
+    program = program_declaration_tb_dense_fr(
+        cur_device,
+        pmd=args.pmd,
+        beta=args.beta,
+        sampling=args.sampling,
+        sampleSize=args.sampling_size,
+        dropout=args.dropout,
+        constraints=args.constraints,
+    )
 
     train_file = "tb_dense_train.json"
     training_set = TemporalReader.from_file(
