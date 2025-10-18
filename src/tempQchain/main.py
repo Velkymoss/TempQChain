@@ -33,8 +33,6 @@ def temporal_fr(
     data_path: str = typer.Option("data/", help="Path to the data folder"),
     results_path: str = typer.Option("models/", help="Path to save models and predictions"),
     # Model parameters
-    model: str = typer.Option("bert", help="Model type to use"),
-    version: int = typer.Option(0, help="Model version (for T5 variants)"),
     dropout: bool = typer.Option(False, help="Enable dropout"),
     constraints: bool = typer.Option(False, help="Enable constraints"),
     # Training method parameters
@@ -79,8 +77,6 @@ def temporal_fr(
         model_change=model_change,
         save=save,
         save_file=save_file,
-        model=model,
-        version=version,
         optim=optim,
         use_mlflow=use_mlflow,
     )

@@ -2,7 +2,7 @@ from string import Template
 from types import MappingProxyType
 
 LABELS_INT = MappingProxyType(
-    {"BEFORE": 1, "AFTER": 2, "INCLUDES": 4, "IS INCLUDED": 8, "SIMULTANEOUS": 16, "VAGUE": 32}
+    {"AFTER": 0, "BEFORE": 1, "INCLUDES": 2, "IS INCLUDED": 3, "SIMULTANEOUS": 4, "VAGUE": 5}
 )
 
 

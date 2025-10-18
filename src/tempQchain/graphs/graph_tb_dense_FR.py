@@ -1,5 +1,5 @@
 from domiknows.graph import Concept, Graph, Relation
-from domiknows.graph.logicalConstrain import andL, exactL, existsL, ifL, orL
+from domiknows.graph.logicalConstrain import andL, exactL, ifL, orL
 
 CONSTRAIN_ACTIVE = True
 
@@ -214,7 +214,6 @@ Relation.clear()
 #         )
 
 
-
 with Graph("temporal_QA_rule") as graph:
     # Group of sentence
     story = Concept(name="story")
@@ -235,21 +234,20 @@ with Graph("temporal_QA_rule") as graph:
     output_for_loss = question(name="output_for_loss")
 
     ifL(
-            question("q"),
-            exactL(
-                before(path=("q",)),
-                after(path=("q",)),
-                simultaneous(path=("q",)),
-                is_included(path=("q",)),
-                includes(path=("q",)),
-                vague(path=("q",)),
-            ),
-        )
+        question("q"),
+        exactL(
+            before(path=("q",)),
+            after(path=("q",)),
+            simultaneous(path=("q",)),
+            is_included(path=("q",)),
+            includes(path=("q",)),
+            vague(path=("q",)),
+        ),
+    )
 
     # Inverse Constrains
     inverse = Concept(name="inverse")
     inv_question1, inv_question2 = inverse.has_a(arg1=question, arg2=question)
-
 
     # symmetric - if q1 has label, q2 has same label
     inverse_list2 = [(simultaneous, simultaneous), (vague, vague)]
@@ -262,9 +260,7 @@ with Graph("temporal_QA_rule") as graph:
     ########################################################################################
     ############################ Transitive ##################################################
     transitive = Concept(name="transitive")
-    tran_quest1, tran_quest2, tran_quest3 = transitive.has_a(
-        arg11=question, arg22=question, arg33=question
-    )
+    tran_quest1, tran_quest2, tran_quest3 = transitive.has_a(arg11=question, arg22=question, arg33=question)
 
     # A rel B & B rel C -> A rel C
     transitive_1 = [before, after, includes, is_included, simultaneous, vague]
