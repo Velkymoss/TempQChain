@@ -12,14 +12,7 @@ import transformers
 from domiknows.program.lossprogram import LearningBasedProgram
 from sklearn.metrics import accuracy_score, f1_score
 
-from tempQchain.graphs.graph_tb_dense_FR import (
-    after,
-    before,
-    includes,
-    is_included,
-    simultaneous,
-    vague,
-)
+from tempQchain.graphs.graph import answer_class
 from tempQchain.logger import get_logger
 from tempQchain.programs.program_fr import (
     program_declaration_tb_dense_fr,
@@ -44,20 +37,8 @@ def eval(
     if args.loaded:
         logger.info(f"Loaded Model Name: {args.loaded_file}")
 
-    all_labels = [
-        before,
-        after,
-        includes,
-        is_included,
-        simultaneous,
-        vague,
-    ]
-
-    pred_list = []
-    pred_set = set()
-
-    all_true = []
-    all_pred = []
+    labels = []
+    predictions = []
 
     if args.constraints:
         total_constraint_sat = 0
@@ -65,23 +46,11 @@ def eval(
 
     for datanode in tqdm.tqdm(program.populate(test_set, device=cur_device), "Checking f1/accuracy..."):
         for question in datanode.getChildDataNodes():
-            pred_set.clear()
-            pred_list.clear()
+            label = int(question.getAttribute(answer_class, "label"))
+            labels.append(label)
+            prediction = int(torch.argmax(question.getAttribute(answer_class, "local/argmax")))
+            predictions.append(prediction)
 
-            for ind, label in enumerate(all_labels):
-                pred = question.getAttribute(label, "local/softmax")
-                if pred.argmax().item() == 1:
-                    pred_set.add(ind)
-                pred_list.append(pred[1].item())
-            true_labels = []
-            pred_labels = []
-            for ind, label_ind in enumerate(all_labels):
-                label = question.getAttribute(label_ind, "label").item()
-                pred = 1 if ind in pred_set else 0
-                true_labels.append(label)
-                pred_labels.append(pred)
-            all_true.append(true_labels)
-            all_pred.append(pred_labels)
         if args.constraints:
             verify_constraints = datanode.verifyResultsLC()
 
@@ -97,11 +66,11 @@ def eval(
                     total_constraint_sat += satisfied_val + if_satisfied_val
                     num_constraints += 2
 
-    accuracy = accuracy_score(all_true, all_pred)
-    f1 = f1_score(all_true, all_pred, average="macro")
+    accuracy = accuracy_score(labels, predictions)
+    f1 = f1_score(labels, predictions, average="macro")
     if args.constraints:
         overall_constraint_rate = total_constraint_sat / num_constraints if num_constraints else 100
-    f1_per_class = f1_score(all_true, all_pred, average=None)
+    f1_per_class = f1_score(labels, predictions, average=None)
     return (
         round(f1 * 100, dec),
         round(accuracy * 100, dec),
