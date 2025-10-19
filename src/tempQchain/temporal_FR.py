@@ -10,6 +10,7 @@ import torch
 import tqdm
 from domiknows.program.lossprogram import LearningBasedProgram
 from sklearn.metrics import accuracy_score, f1_score
+from sklearn.utils.class_weight import compute_class_weight
 
 from tempQchain.graphs.graph_fr import answer_class
 from tempQchain.logger import get_logger
@@ -18,9 +19,6 @@ from tempQchain.programs.program_fr import (
 )
 from tempQchain.readers.temporal_reader import TemporalReader
 from tempQchain.utils import get_avg_loss, get_train_labels
-
-from sklearn.utils.class_weight import compute_class_weight
-
 
 warnings.filterwarnings("ignore")
 
@@ -153,13 +151,17 @@ def train(
 
         train_loss = program.model.loss.value()["answer_class"]
         eval_loss = get_avg_loss(program, eval_set, cur_device, "eval")
-        f1, accuracy, constraint_rate, _ = eval(program=program, test_set=eval_set, cur_device=cur_device, args=args)
+        f1, accuracy, constraint_rate, f1_per_class = eval(
+            program=program, test_set=eval_set, cur_device=cur_device, args=args
+        )
 
         logger.info(f"Epoch: {epoch}")
         logger.info(f"Train Loss: {train_loss}")
         logger.info(f"Eval Loss: {eval_loss}")
         logger.info(f"Dev Accuracy: {accuracy}%")
         logger.info(f"Dev F1: {f1}%")
+        for label, score in zip(LABEL_STRINGS, f1_per_class):
+            logger.info(f"Dev F1 {label}: {score}%")
         if args.constraints:
             logger.info(f"Dev Constraint Rate: {constraint_rate}")
         if args.use_mlflow:
@@ -260,7 +262,7 @@ def main(args: Any) -> None:
 
     if args.use_class_weights:
         train_labels = get_train_labels(training_set)
-        class_weights = compute_class_weight('balanced',classes=np.unique(train_labels), y=train_labels)
+        class_weights = compute_class_weight("balanced", classes=np.unique(train_labels), y=train_labels)
         logger.info(f"Calculated class weigths {class_weights}")
         class_weights = torch.FloatTensor(class_weights).to(cur_device)
 
