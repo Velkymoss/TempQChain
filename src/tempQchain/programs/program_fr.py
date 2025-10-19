@@ -106,7 +106,7 @@ def program_declaration_tb_dense_fr(
 
     infer_list = ["ILP", "local/argmax"]  # ['ILP', 'local/argmax']
     if pmd:
-        if class_weights:
+        if class_weights is not None::
             criterion = NBCrossEntropyLoss(weight=class_weights)
         else:
             criterion = NBCrossEntropyLoss()
