@@ -35,6 +35,7 @@ def temporal_fr(
     # Model parameters
     dropout: bool = typer.Option(False, help="Enable dropout"),
     constraints: bool = typer.Option(False, help="Enable constraints"),
+    use_class_weights: bool = typer.Option(False, help="Enable class weights for training"),
     # Training method parameters
     pmd: bool = typer.Option(False, help="Use Primal Dual method"),
     beta: float = typer.Option(0.5, help="Beta parameter for PMD"),
@@ -79,6 +80,7 @@ def temporal_fr(
         save_file=save_file,
         optim=optim,
         use_mlflow=use_mlflow,
+        use_class_weights=use_class_weights,
     )
     temporal_FR.main(args)
 
@@ -97,6 +99,7 @@ def temporal_yn(
     model: str = typer.Option("bert", help="Model type to use"),
     dropout: bool = typer.Option(False, help="Enable dropout"),
     constraints: bool = typer.Option(False, help="Enable constraints"),
+    use_class_weights: bool = typer.Option(False, help="Enable class weights for training"),
     # Training method parameters
     pmd: bool = typer.Option(False, help="Use Primal Dual method"),
     beta: float = typer.Option(0.5, help="Beta parameter for PMD"),
@@ -141,6 +144,7 @@ def temporal_yn(
         model=model,
         check_condition=check_condition,
         use_mlflow=use_mlflow,
+        use_class_weights=use_class_weights,
     )
     temporal_YN.main(args)
 

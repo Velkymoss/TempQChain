@@ -8,7 +8,6 @@ import mlflow
 import numpy as np
 import torch
 import tqdm
-import transformers
 from domiknows.program.lossprogram import LearningBasedProgram
 from sklearn.metrics import accuracy_score, f1_score
 
@@ -18,7 +17,10 @@ from tempQchain.programs.program_fr import (
     program_declaration_tb_dense_fr,
 )
 from tempQchain.readers.temporal_reader import TemporalReader
-from tempQchain.utils import get_avg_loss
+from tempQchain.utils import get_avg_loss, get_train_labels
+
+from sklearn.utils.class_weight import compute_class_weight
+
 
 warnings.filterwarnings("ignore")
 
@@ -67,7 +69,7 @@ def eval(
                 ):
                     total_constraint_sat += satisfied_val + if_satisfied_val
                     num_constraints += 2
-    
+
     accuracy = accuracy_score(labels, predictions)
     f1 = f1_score(labels, predictions, average="macro")
     if args.constraints:
@@ -132,13 +134,11 @@ def train(
 
     for epoch in range(1, args.epoch + 1):
         logger.info(f"Epoch {epoch}/{args.epoch}")
-    
+
         if args.pmd:
-            program.train(train_set, c_warmup_iters=0, train_epoch_num=1, 
-                     Optim=optimizer, device=cur_device)
+            program.train(train_set, c_warmup_iters=0, train_epoch_num=1, Optim=optimizer, device=cur_device)
         else:
-            program.train(train_set, train_epoch_num=1, 
-                        Optim=optimizer, device=cur_device)
+            program.train(train_set, train_epoch_num=1, Optim=optimizer, device=cur_device)
 
         if program.model.metric:
             train_metrics = program.model.metric["argmax"].value()["answer_class"]
@@ -148,10 +148,9 @@ def train(
                 metric = train_metrics[key]
                 train_f1.append(metric)
                 logger.info(f"{label} F1: {metric}")
-            train_macro_f1 = sum(train_f1)/len(train_f1)
+            train_macro_f1 = sum(train_f1) / len(train_f1)
             logger.info(f"Train Macro F1: {train_macro_f1}")
-        
-      
+
         train_loss = program.model.loss.value()["answer_class"]
         eval_loss = get_avg_loss(program, eval_set, cur_device, "eval")
         f1, accuracy, constraint_rate, _ = eval(program=program, test_set=eval_set, cur_device=cur_device, args=args)
@@ -254,6 +253,27 @@ def main(args: Any) -> None:
     else:
         cur_device = "cuda:" + str(cuda_number) if torch.cuda.is_available() else "cpu"
 
+    train_file = "tb_dense_train.json"
+    training_set = TemporalReader.from_file(
+        file_path=os.path.join(args.data_path, train_file), question_type="FR", batch_size=args.batch_size
+    )
+
+    if args.use_class_weights:
+        train_labels = get_train_labels(training_set)
+        class_weights = compute_class_weight('balanced',classes=np.unique(train_labels), y=train_labels)
+        logger.info(f"Calculated class weigths {class_weights}")
+        class_weights = torch.FloatTensor(class_weights).to(cur_device)
+
+    eval_file = "tb_dense_dev.json"
+    eval_set = TemporalReader.from_file(
+        file_path=os.path.join(args.data_path, eval_file), question_type="FR", batch_size=args.batch_size
+    )
+
+    test_file = "tb_dense_test.json"
+    test_set = TemporalReader.from_file(
+        file_path=os.path.join(args.data_path, test_file), question_type="FR", batch_size=args.batch_size
+    )
+
     program = program_declaration_tb_dense_fr(
         cur_device,
         pmd=args.pmd,
@@ -262,22 +282,8 @@ def main(args: Any) -> None:
         sampleSize=args.sampling_size,
         dropout=args.dropout,
         constraints=args.constraints,
+        class_weights=class_weights if args.use_class_weights else None,
     )
-
-    train_file = "tb_dense_train.json"
-    training_set = TemporalReader.from_file(
-        file_path=os.path.join(args.data_path, train_file), question_type="FR", batch_size=args.batch_size
-    )[:1]
-
-    test_file = "tb_dense_test.json"
-    test_set = TemporalReader.from_file(
-        file_path=os.path.join(args.data_path, test_file), question_type="FR", batch_size=args.batch_size
-    )[:1]
-
-    eval_file = "tb_dense_dev.json"
-    eval_set = TemporalReader.from_file(
-        file_path=os.path.join(args.data_path, eval_file), question_type="FR", batch_size=args.batch_size
-    )[:1]
 
     program_name = "PMD" if args.pmd else "Sampling" if args.sampling else "Base"
 

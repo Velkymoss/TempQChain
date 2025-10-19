@@ -41,6 +41,7 @@ def program_declaration_tb_dense_fr(
     sampleSize: int = 1,
     dropout: bool = False,
     constraints: bool = False,
+    class_weights: torch.FloatTensor = None,
 ) -> LearningBasedProgram:
     program = None
 
@@ -105,12 +106,17 @@ def program_declaration_tb_dense_fr(
 
     infer_list = ["ILP", "local/argmax"]  # ['ILP', 'local/argmax']
     if pmd:
+        if class_weights:
+            criterion = NBCrossEntropyLoss(weight=class_weights)
+        else:
+            criterion = NBCrossEntropyLoss()
+
         program = PrimalDualProgram(
             graph,
             SolverModel,
             poi=poi_list,
             inferTypes=infer_list,
-            loss=MacroAverageTracker(NBCrossEntropyLoss()),
+            loss=MacroAverageTracker(criterion),
             beta=beta,
             metric={"ILP": PRF1Tracker(DatanodeCMMetric()), "argmax": PRF1Tracker(DatanodeCMMetric("local/argmax"))},
             device=device,
