@@ -27,11 +27,46 @@ class ModernBERTTokenizer:
 
     def __call__(self, _, question, story):
         encoded_input = self.tokenizer(
-            question, story, padding="max_length", truncation=True, max_length=5000, return_tensors=None
+            question,
+            story,
+            padding="max_length",
+            truncation=True,
+            max_length=5000,
+            return_tensors="pt"
         )
 
         input_ids = encoded_input["input_ids"]
-        return torch.LongTensor(input_ids)
+
+        return input_ids
+
+
+class ModernBert(nn.Module):
+    def __init__(self, model_name="answerdotai/ModernBERT-base", num_classes=6, drp=False, device="cpu", tokenizer=None):
+        super().__init__()
+
+        self.bert = ModernBertModel.from_pretrained(model_name)
+        if tokenizer is not None:
+            self.bert.resize_token_embeddings(len(tokenizer))
+
+        self.hidden_size = self.bert.config.hidden_size
+
+        dropout_prob = 0.0 if drp else getattr(self.bert.config, "classifier_dropout", 0.0)
+        self.dropout = nn.Dropout(dropout_prob)
+
+        self.num_classes = num_classes
+        self.classifier = nn.Linear(self.hidden_size, self.num_classes)
+        self.device = device
+        self.to(device)
+
+    def forward(self, input_ids):
+        outputs = self.bert(
+            input_ids=input_ids,
+        )
+        pooled_output = outputs.last_hidden_state[:, 0, :]
+        pooled_output = self.dropout(pooled_output)
+
+        logits = self.classifier(pooled_output)
+        return logits
 
 
 class MultipleClassYN(BertPreTrainedModel):
@@ -57,30 +92,6 @@ class MultipleClassYN(BertPreTrainedModel):
         output = self.classifier(pooled_output)
 
         return output
-
-
-class ModernBert(nn.Module):
-    def __init__(self, model_name="answerdotai/ModernBERT-base", num_classes=6, drp=False, device="cpu"):
-        super().__init__()
-
-        self.bert = ModernBertModel.from_pretrained(model_name)
-        self.hidden_size = self.bert.config.hidden_size
-
-        dropout_prob = 0.0 if drp else getattr(self.bert.config, "classifier_dropout", 0.0)
-        self.dropout = nn.Dropout(dropout_prob)
-
-        self.num_classes = num_classes
-        self.classifier = nn.Linear(self.hidden_size, self.num_classes)
-        self.device = device
-        self.to(device)
-
-    def forward(self, input_ids):
-        outputs = self.bert(input_ids)
-        pooled_output = outputs.last_hidden_state[:, 0, :]
-        pooled_output = self.dropout(pooled_output)
-        logits = self.classifier(pooled_output)
-        # probs = self.softmax(logits)
-        return logits
 
 
 class MultipleClassYN_Hidden(BertPreTrainedModel):

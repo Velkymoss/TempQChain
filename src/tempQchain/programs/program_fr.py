@@ -90,10 +90,8 @@ def program_declaration_tb_dense_fr(
     question["input_ids"] = JointSensor(
         story_contain, "question", "story", forward=tokenizer, device=device
     )
-    classifier = ModernBert(device=device, drp=dropout, num_classes=6)
+    classifier = ModernBert(device=device, drp=dropout, num_classes=6, tokenizer=tokenizer.tokenizer)
     question[answer_class] = ModuleLearner("input_ids", module=classifier, device=device)
-
-    classifier.bert.resize_token_embeddings(len(tokenizer.tokenizer))
 
     poi_list = [
         question,
