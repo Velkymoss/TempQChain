@@ -78,17 +78,17 @@ def create_object_info(data_df):
 
 def get_temporal_question(relation):
     if relation.lower() == "before":
-        template = Template("Did $event1 happen before $event2?")
+        template = Template("Did <$event1> happen before <$event2?>")
     elif relation.lower() == "after":
-        template = Template("Did $event1 happen after $event2?")
+        template = Template("Did <$event1> happen after <$event2>?")
     elif relation.lower() == "includes":
-        template = Template("Does $event1 temporally include $event2?")
+        template = Template("Does <$event1> temporally include <$event2>?")
     elif relation.lower() == "is included":
-        template = Template("Is $event1 temporally included in $event2?")
+        template = Template("Is <$event1> temporally included in <$event2>?")
     elif relation.lower() == "simultaneous":
-        template = Template("Did $event1 happen simultaneously with $event2?")
+        template = Template("Did <$event1> happen simultaneously with <$event2>?")
     else:
-        template = Template("Is the temporal relation between $event1 and $event2 vague?")
+        template = Template("Is the temporal relation between <$event1> and <$event2> vague?")
 
     return template
 
@@ -112,7 +112,7 @@ def create_yn(event_pair, relation, relation_set):
 
 def create_fr(event_pair, relation):
     # template = Template("What is the temporal relation between $event1 and $event2?")
-    template = Template("When did $event1 happen in time compared to $event2?")
+    template = Template("When did <$event1> happen in time compared to <$event2?>")
     q_text = template.substitute(event1=event_pair[0], event2=event_pair[1])
 
     answer = [relation]
@@ -647,7 +647,8 @@ def get_t0(article_soup: BeautifulSoup) -> str:
     return creation_date if len(creation_date) == 10 else creation_date[:10]
 
 
-def get_clean_article(article_soup: BeautifulSoup) -> str:
+def get_clean_article(article_soup: BeautifulSoup) -> tuple[str, set[str]]:
+    special_tokens = set()
     cleaned_sentences = []
     sentence_tokens = []
     sentences = article_soup.find_all("s")
@@ -656,12 +657,16 @@ def get_clean_article(article_soup: BeautifulSoup) -> str:
             if "<" in str(child) and "</" in str(child):
                 if child.name == "EVENT":
                     sentence_tokens.append(
-                        f"<EVENT> id={child.get('eid')} >{child.get_text(strip=True, separator=' ')}< </EVENT>"
+                        f"<{child.get('eid')}>{child.get_text(strip=True, separator=' ')}<{child.get('eid')}/>"
                     )
+                    special_tokens.add(f"<{child.get('eid')}>")
+                    special_tokens.add(f"<{child.get('eid')}/>")
                 elif child.name == "TIMEX3":
                     sentence_tokens.append(
-                        f"<EVENT> id={child.get('tid')} >{child.get_text(strip=True, separator=' ')}< </EVENT>"
+                        f"<{child.get('tid')}>{child.get_text(strip=True, separator=' ')}</{child.get('tid')}>"
                     )
+                    special_tokens.add(f"<{child.get('tid')}>")
+                    special_tokens.add(f"<{child.get('tid')}/>")
                 else:
                     sentence_tokens.append(child.get_text(strip=True, separator=" "))
             else:
@@ -669,7 +674,7 @@ def get_clean_article(article_soup: BeautifulSoup) -> str:
         sentence = join_sentence_tokens(sentence_tokens)
         cleaned_sentences.append(sentence)
         sentence_tokens = []
-    return " ".join(cleaned_sentences)
+    return " ".join(cleaned_sentences), special_tokens
 
 
 def fill_template(relations, type):

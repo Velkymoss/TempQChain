@@ -1,3 +1,4 @@
+import json
 import os
 from statistics import mean
 
@@ -125,6 +126,8 @@ def process_tb_dense(
     logger.info(f"Train data: {len(train_df)}")
     logger.info(f"Dev data: {len(dev_df)}")
     logger.info(f"Test data: {len(test_df)}")
+
+    special_tokens = set()
 
     for mode, df in [("train", train_df), ("dev", dev_df), ("test", test_df)]:
         logger.info(f"Processing {mode} data...")
@@ -262,10 +265,11 @@ def process_tb_dense(
             filepath = os.path.join(ARTICLE_PATH, filename)
             article_soup = parse_article(filepath)
             t0_value = get_t0(article_soup)
-            clean_article = get_clean_article(article_soup)
-            article_header = f"Written on <EVENT> id=t0 >{t0_value}< </EVENT>"
+            clean_article, article_special_tokens = get_clean_article(article_soup)
+            article_header = f"Written on <t0>{t0_value}</t0>"
             full_article = article_header + " " + clean_article
             article["story"] = [full_article]
+            special_tokens.update(article_special_tokens)
 
         # Save to JSON
         logger.info("Saving data to JSON...")
@@ -275,6 +279,9 @@ def process_tb_dense(
         # Save rules
         logger.info("Saving rules...")
         save_rules(inverse, "symmetry")
+
+    with open(os.path.join(saving_path, "tb_dense_special_tokens.json"), "w") as f:
+        json.dump(list(special_tokens), f)
 
     logger.info("TB-Dense processing completed successfully!")
 

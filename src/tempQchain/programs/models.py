@@ -20,8 +20,10 @@ class BERTTokenizer:
 
 
 class ModernBERTTokenizer:
-    def __init__(self):
+    def __init__(self, special_tokens: list[str] = None):
         self.tokenizer = AutoTokenizer.from_pretrained("answerdotai/ModernBERT-base")
+        if special_tokens:
+            self.tokenizer.add_tokens(special_tokens)
 
     def __call__(self, _, question, story):
         encoded_input = self.tokenizer(
